@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RGB Trainer (Training Edition)</title>
+  <style>
+    :root { --border:#e5e7eb; --text:#111827; --muted:#6b7280; --bg:#ffffff; --soft:#f3f4f6; }
+    * { box-sizing: border-box; }
+    body{
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background: #f7f7f8; color: var(--text);
+    }
+    .wrap{ max-width: 1100px; margin: 24px auto; padding: 16px; }
+    .card{
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    h1{ margin:0 0 6px; font-size: 20px; }
+    .sub{ margin:0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .row{ display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .col{ flex:1; min-width: 320px; }
+    .swatch{
+      width:100%; height: 240px; border-radius: 14px; border: 1px solid var(--border);
+      position: relative; overflow:hidden; background: var(--soft);
+    }
+    .label{
+      position:absolute; left:10px; top:10px; padding:6px 10px;
+      background: rgba(255,255,255,.78); border: 1px solid rgba(0,0,0,.08);
+      border-radius: 999px; font-size: 12px; color: #111;
+      backdrop-filter: blur(6px);
+    }
+    .label.right{ left:auto; right:10px; }
+    .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 12px; }
+    button{
+      border: 1px solid var(--border); background: #111827; color: white;
+      padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 700;
+    }
+    button.secondary{ background:#fff; color:#111827; }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+    .select, .checkbox{
+      border: 1px solid var(--border); background:#fff; color:#111827;
+      padding: 9px 10px; border-radius: 12px; font-size: 14px;
+    }
+    .checkbox input{ vertical-align: middle; margin-right: 6px; }
+    .sliderBlock{ margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+    .sliderRow{ display:flex; align-items:center; gap:12px; margin: 10px 0; }
+    .sliderRow label{
+      width: 54px; font-weight:800; cursor:pointer;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:6px 10px; border-radius: 12px; border: 1px solid var(--border);
+      background: #fff;
+      user-select:none;
+    }
+    .sliderRow label.active{ outline: 2px solid #111827; outline-offset: 1px; }
+    .sliderRow label .k{ opacity:.8; }
+    input[type="range"]{ width: 100%; }
+    .val{ width: 52px; text-align:right; font-variant-numeric: tabular-nums; color: var(--muted); }
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .kpi{
+      border: 1px solid var(--border); border-radius: 14px; padding: 10px;
+      background:#fff;
+    }
+    .kpi .k{ color: var(--muted); font-size: 12px; }
+    .kpi .v{ font-weight: 900; font-size: 18px; font-variant-numeric: tabular-nums; }
+    .pill{
+      display:inline-block; padding: 3px 8px; border-radius: 999px; border:1px solid var(--border);
+      font-size: 12px; color: var(--muted); background:#fff;
+      font-variant-numeric: tabular-nums;
+    }
+    .note{ color: var(--muted); font-size: 12px; margin-top: 10px; line-height: 1.35; }
+    .tipbox{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      padding:12px;
+      margin-top:12px;
+    }
+    .tipbox h2{ margin:0 0 6px; font-size: 14px; }
+    .tipbox ul{ margin:8px 0 0 18px; color:var(--muted); font-size: 13px; line-height: 1.35; }
+    table{ width:100%; border-collapse: collapse; margin-top: 12px; }
+    th, td{ text-align:left; padding: 10px; border-top: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+    th{ color: var(--muted); font-weight: 800; }
+    .miniBar{ height: 18px; border-radius:999px; border:1px solid var(--border); }
+    .hiddenOverlay{
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-weight:900; letter-spacing:.02em;
+      color:#111827; background: rgba(243,244,246,.94);
+      backdrop-filter: blur(2px);
+    }
+    .danger{ color:#b91c1c; }
+    .good{ color:#047857; }
+    .sectionTitle{ margin: 0 0 8px; font-size:16px; }
+    .muted{ color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>RGB Trainer</h1>
+      <p class="sub">
+        You can see the target briefly (optional exposure). You <b>cannot see your guessed colour</b> until you submit.
+        Click the R/G/B label to select a slider, then use <b>←/→</b> to adjust (hold <b>Shift</b> for ±10).
+      </p>
+
+      <div class="row">
+        <div class="col">
+          <div id="targetSwatch" class="swatch">
+            <div class="label" id="targetLabel">Target</div>
+            <div class="label right" id="exposureCountdown" style="display:none;">5.0s</div>
+            <div id="hiddenOverlay" class="hiddenOverlay" style="display:none;">HIDDEN</div>
+          </div>
+
+          <div class="controls">
+            <button id="newBtn" class="secondary" type="button">New round</button>
+            <button id="submitBtn" type="button">Submit</button>
+            <button id="revealBtn" class="secondary" type="button" disabled>Reveal target RGB</button>
+
+            <select id="mode" class="select" title="Training mode">
+              <option value="rgb" selected>Full RGB</option>
+              <option value="value">Value only (grayscale)</option>
+              <option value="order">Channel order only</option>
+            </select>
+
+            <select id="palette" class="select" title="Target generator">
+              <option value="any">Any RGB (hard)</option>
+              <option value="muted" selected>Muted / vintage</option>
+              <option value="pastel">Pastel</option>
+              <option value="dark">Dark</option>
+            </select>
+
+            <select id="exposure" class="select" title="How long the target is visible">
+              <option value="unlimited" selected>Exposure: unlimited</option>
+              <option value="2">Exposure: 2s</option>
+              <option value="5">Exposure: 5s</option>
+              <option value="10">Exposure: 10s</option>
+            </select>
+
+            <label class="checkbox" title="Keep target visible even if exposure is set">
+              <input id="lockTarget" type="checkbox" />
+              Lock target
+            </label>
+
+            <label class="checkbox" title="Optional: show a non-numeric hint">
+              <input id="hintToggle" type="checkbox" />
+              Hint (no numbers)
+            </label>
+
+            <select id="step" class="select" title="Slider step size">
+              <option value="5" selected>Step: 5</option>
+              <option value="2">Step: 2</option>
+              <option value="1">Step: 1</option>
+            </select>
+          </div>
+
+          <div class="note" id="hintText" style="display:none;"></div>
+
+          <!-- MODE: Full RGB -->
+          <div id="rgbPanel" class="sliderBlock">
+            <div class="sliderRow">
+              <label id="rLabel" for="r"><span class="k">R</span><span class="pill" id="rHotkey">←→</span></label>
+              <input id="r" type="range" min="0" max="255" value="128" />
+              <div class="val" id="rVal">128</div>
+            </div>
+            <div class="sliderRow">
+              <label id="gLabel" for="g"><span class="k">G</span><span class="pill" id="gHotkey">←→</span></label>
+              <input id="g" type="range" min="0" max="255" value="128" />
+              <div class="val" id="gVal">128</div>
+            </div>
+            <div class="sliderRow">
+              <label id="bLabel" for="b"><span class="k">B</span><span class="pill" id="bHotkey">←→</span></label>
+              <input id="b" type="range" min="0" max="255" value="128" />
+              <div class="val" id="bVal">128</div>
+            </div>
+
+            <div class="note">
+              Value proxy: <span class="pill">V ≈ (R+G+B)/3</span> |
+              Saturation proxy: <span class="pill">S ≈ max(R,G,B) − min(R,G,B)</span>
+            </div>
+          </div>
+
+          <!-- MODE: Value Only -->
+          <div id="valuePanel" class="sliderBlock" style="display:none;">
+            <div class="sliderRow">
+              <label id="vLabel" for="v"><span class="k">V</span><span class="pill">←→</span></label>
+              <input id="v" type="range" min="0" max="255" value="128" />
+              <div class="val" id="vVal">128</div>
+            </div>
+            <div class="tipbox">
+              <h2>Value ranges (0–255)</h2>
+              <ul>
+                <li><b>Very dark:</b> 0–60</li>
+                <li><b>Dark:</b> 60–110</li>
+                <li><b>Mid:</b> 110–160</li>
+                <li><b>Light:</b> 160–210</li>
+                <li><b>Very light:</b> 210–255</li>
+              </ul>
+              <div class="note">In this mode the target is shown in grayscale (R=G=B).</div>
+            </div>
+          </div>
+
+          <!-- MODE: Channel Order Only -->
+          <div id="orderPanel" class="sliderBlock" style="display:none;">
+            <div class="tipbox">
+              <h2>Pick channel dominance (no numbers)</h2>
+              <div class="note">Choose which channel you think is the <b>highest</b> and the <b>lowest</b>.</div>
+              <div class="controls" style="margin-top:10px;">
+                <span class="pill">Highest</span>
+                <select id="highest" class="select">
+                  <option value="r">R</option>
+                  <option value="g">G</option>
+                  <option value="b">B</option>
+                </select>
+                <span class="pill">Lowest</span>
+                <select id="lowest" class="select">
+                  <option value="r">R</option>
+                  <option value="g">G</option>
+                  <option value="b">B</option>
+                </select>
+              </div>
+              <div class="note">Tip: muted colours have channels closer together; vivid colours have one channel far above the others.</div>
+            </div>
+          </div>
+
+          <!-- Results / Compare after -->
+          <div class="grid3" style="margin-top:12px;">
+            <div class="kpi">
+              <div class="k">Your submission</div>
+              <div class="v" id="yourOut">—</div>
+              <div class="note" style="margin-top:8px;">
+                <div id="yourSwatch" style="height:48px;border-radius:12px;border:1px solid var(--border);background:var(--soft);filter:blur(10px);"></div>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="k">Target</div>
+              <div class="v" id="targetOut">—</div>
+              <div class="note" style="margin-top:8px;">
+                <div id="targetMini" style="height:48px;border-radius:12px;border:1px solid var(--border);background:var(--soft);filter:blur(10px);"></div>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="k">Difference (abs Δ)</div>
+              <div class="v" id="diffOut">—</div>
+              <div class="note" style="margin-top:8px;">
+                <div id="diffSwatch" style="height:48px;border-radius:12px;border:1px solid var(--border);background:var(--soft);filter:blur(10px);"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Diagnostics -->
+          <div class="grid2" style="margin-top:12px;">
+            <div class="kpi">
+              <div class="k">Errors</div>
+              <div class="v" id="errMain">—</div>
+              <div class="note" id="errBreakdown" style="margin-top:8px;">—</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Coaching nudge</div>
+              <div class="v" id="nudgeTitle">—</div>
+              <div class="note" id="nudgeText" style="margin-top:8px;">—</div>
+            </div>
+          </div>
+
+          <div class="tipbox">
+            <h2>Numeric cheat-sheet (full RGB mode)</h2>
+            <ul>
+              <li><b>Brightness (value):</b> V ≈ (R+G+B)/3
+                <span class="pill">0–60 very dark</span>
+                <span class="pill">60–110 dark</span>
+                <span class="pill">110–160 mid</span>
+                <span class="pill">160–210 light</span>
+                <span class="pill">210–255 very light</span>
+              </li>
+              <li><b>Muted vs vivid:</b> S ≈ max−min
+                <span class="pill">0–20 very muted</span>
+                <span class="pill">20–50 muted</span>
+                <span class="pill">50–90 moderate</span>
+                <span class="pill">90–170 vivid</span>
+              </li>
+              <li><b>Channel order:</b> decide highest/lowest first (e.g., warm beige often R≥G≥B, cool slate often B≥G≥R).</li>
+              <li><b>Workflow:</b> set value (move all channels together), set saturation (spread or compress channels), then fix hue (which channel leads).</li>
+            </ul>
+          </div>
+
+          <div class="note">
+            Keyboard: click R/G/B (or V) label → use ←/→. Hold Shift for ±10. (Your guessed colour remains hidden until Submit.)
+          </div>
+        </div>
+
+        <div class="col">
+          <h2 class="sectionTitle">Progress</h2>
+          <p class="sub" style="margin-top:0;">
+            Attempts, best/average/median, and a streak for “good” rounds. (Threshold = Manhattan ≤ <span class="pill" id="streakThresholdPill">40</span> in RGB mode.)
+          </p>
+
+          <div class="grid2">
+            <div class="kpi">
+              <div class="k">Attempts</div>
+              <div class="v" id="statAttempts">0</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Best (lowest Manhattan)</div>
+              <div class="v" id="statBest">—</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Average (last 20)</div>
+              <div class="v" id="statAvg20">—</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Median (last 50)</div>
+              <div class="v" id="statMed50">—</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Streak (≤ threshold)</div>
+              <div class="v" id="statStreak">0</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Last result</div>
+              <div class="v" id="statLast">—</div>
+            </div>
+          </div>
+
+          <h2 class="sectionTitle" style="margin-top:16px;">History (last 10)</h2>
+          <div class="card" style="padding:0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Target</th>
+                  <th>Your submission</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody id="histBody">
+                <tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="note">
+            Scores shown as Manhattan (RGB mode) or |ΔV| (Value mode) or Correct/Incorrect (Order mode).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ---------- utils ----------
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const randInt = (lo, hi) => Math.floor(Math.random() * (hi - lo + 1)) + lo;
+
+  const rgbCss = (c) => `rgb(${c.r}, ${c.g}, ${c.b})`;
+  const grayCss = (v) => `rgb(${v}, ${v}, ${v})`;
+
+  const avgValue = (c) => (c.r + c.g + c.b) / 3;
+  const satProxy = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+
+  const manhattan = (a,b) =>
+    Math.abs(a.r-b.r) + Math.abs(a.g-b.g) + Math.abs(a.b-b.b);
+
+  const euclid = (a,b) => {
+    const dr=a.r-b.r, dg=a.g-b.g, db=a.b-b.b;
+    return Math.sqrt(dr*dr+dg*dg+db*db);
+  };
+
+  function toHsl({r,g,b}) {
+    r/=255; g/=255; b/=255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    const d = max - min;
+    let h = 0;
+    if (d !== 0) {
+      switch (max) {
+        case r: h = ((g - b) / d) % 6; break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    const l = (max + min) / 2;
+    const s = d === 0 ? 0 : d / (1 - Math.abs(2*l - 1));
+    return {h, s, l};
+  }
+
+  function hintFor(rgb){
+    const {h,s,l} = toHsl(rgb);
+    const hueName =
+      (h < 15 || h >= 345) ? "red" :
+      (h < 45) ? "orange" :
+      (h < 70) ? "yellow" :
+      (h < 165) ? "green" :
+      (h < 200) ? "cyan" :
+      (h < 260) ? "blue" :
+      (h < 325) ? "purple" : "magenta";
+
+    const sat = s < 0.18 ? "very muted" : s < 0.35 ? "muted" : s < 0.6 ? "moderate" : "vivid";
+    const val = l < 0.25 ? "dark" : l < 0.5 ? "mid-dark" : l < 0.75 ? "mid-light" : "light";
+    return `Hint: ${val}, ${sat}, leaning ${hueName}.`;
+  }
+
+  function genTarget(palette){
+    let r,g,b;
+    if (palette === "muted") {
+      const base = randInt(60, 200);
+      r = clamp(base + randInt(-35, 35), 0, 255);
+      g = clamp(base + randInt(-35, 35), 0, 255);
+      b = clamp(base + randInt(-35, 35), 0, 255);
+      const pick = randInt(0,2);
+      if (pick===0) r = clamp(r + randInt(10,40),0,255);
+      if (pick===1) g = clamp(g + randInt(10,40),0,255);
+      if (pick===2) b = clamp(b + randInt(10,40),0,255);
+    } else if (palette === "pastel") {
+      r = randInt(160, 255);
+      g = randInt(160, 255);
+      b = randInt(160, 255);
+      const drop = randInt(0,2);
+      if (drop===0) r = clamp(r - randInt(0,70),0,255);
+      if (drop===1) g = clamp(g - randInt(0,70),0,255);
+      if (drop===2) b = clamp(b - randInt(0,70),0,255);
+    } else if (palette === "dark") {
+      r = randInt(0, 120);
+      g = randInt(0, 120);
+      b = randInt(0, 120);
+      const boost = randInt(0,2);
+      if (boost===0) r = clamp(r + randInt(0,90),0,255);
+      if (boost===1) g = clamp(g + randInt(0,90),0,255);
+      if (boost===2) b = clamp(b + randInt(0,90),0,255);
+    } else {
+      r = randInt(0,255); g = randInt(0,255); b = randInt(0,255);
+    }
+    return {r,g,b};
+  }
+
+  function absDiffColor(a,b){
+    return { r: Math.abs(a.r-b.r), g: Math.abs(a.g-b.g), b: Math.abs(a.b-b.b) };
+  }
+
+  function channelOrder(c){
+    const arr = [
+      {k:"r", v:c.r},
+      {k:"g", v:c.g},
+      {k:"b", v:c.b}
+    ].sort((x,y)=>y.v-x.v);
+    return { highest: arr[0].k, lowest: arr[2].k, sorted: arr.map(x=>x.k).join("≥") };
+  }
+
+  function median(nums){
+    if (!nums.length) return null;
+    const a = [...nums].sort((x,y)=>x-y);
+    const mid = Math.floor(a.length/2);
+    return a.length % 2 ? a[mid] : (a[mid-1] + a[mid]) / 2;
+  }
+
+  // ---------- elements ----------
+  const el = (id) => document.getElementById(id);
+
+  const targetSwatch = el("targetSwatch");
+  const hiddenOverlay = el("hiddenOverlay");
+  const exposureCountdown = el("exposureCountdown");
+
+  const newBtn = el("newBtn");
+  const submitBtn = el("submitBtn");
+  const revealBtn = el("revealBtn");
+
+  const modeSel = el("mode");
+  const paletteSel = el("palette");
+  const exposureSel = el("exposure");
+  const lockTarget = el("lockTarget");
+  const hintToggle = el("hintToggle");
+  const hintText = el("hintText");
+  const stepSel = el("step");
+
+  const rgbPanel = el("rgbPanel");
+  const valuePanel = el("valuePanel");
+  const orderPanel = el("orderPanel");
+
+  const rSl = el("r"), gSl = el("g"), bSl = el("b");
+  const rVal = el("rVal"), gVal = el("gVal"), bVal = el("bVal");
+  const rLabel = el("rLabel"), gLabel = el("gLabel"), bLabel = el("bLabel");
+
+  const vSl = el("v"), vVal = el("vVal");
+  const vLabel = el("vLabel");
+
+  const highestSel = el("highest");
+  const lowestSel = el("lowest");
+
+  const yourOut = el("yourOut");
+  const targetOut = el("targetOut");
+  const diffOut = el("diffOut");
+  const yourSwatch = el("yourSwatch");
+  const targetMini = el("targetMini");
+  const diffSwatch = el("diffSwatch");
+
+  const errMain = el("errMain");
+  const errBreakdown = el("errBreakdown");
+  const nudgeTitle = el("nudgeTitle");
+  const nudgeText = el("nudgeText");
+
+  const histBody = el("histBody");
+
+  const statAttempts = el("statAttempts");
+  const statBest = el("statBest");
+  const statAvg20 = el("statAvg20");
+  const statMed50 = el("statMed50");
+  const statStreak = el("statStreak");
+  const statLast = el("statLast");
+
+  const streakThresholdPill = el("streakThresholdPill");
+  const STREAK_THRESHOLD = 40;
+  streakThresholdPill.textContent = String(STREAK_THRESHOLD);
+
+  // ---------- state ----------
+  let target = genTarget(paletteSel.value);
+  let targetHidden = false;
+  let exposureTimer = null;
+  let exposureEndAt = null;
+
+  // history entries:
+  // { mode:"rgb"|"value"|"order", target, guess, score, detail }
+  const history = []; // newest first, max 10 display
+  const allScoresRGB = [];   // Manhattan
+  const allScoresValue = []; // abs ΔV
+  let streak = 0;
+
+  let activeControl = "r"; // "r"|"g"|"b"|"v"
+  let submittedThisRound = false;
+
+  // ---------- UI helpers ----------
+  function setActiveControl(k){
+    activeControl = k;
+    [rLabel,gLabel,bLabel].forEach(x=>x.classList.remove("active"));
+    if (k==="r") rLabel.classList.add("active");
+    if (k==="g") gLabel.classList.add("active");
+    if (k==="b") bLabel.classList.add("active");
+    if (k==="v") vLabel.classList.add("active");
+    if (k!=="v") vLabel.classList.remove("active");
+  }
+
+  function setSliderSteps(step){
+    const s = +step;
+    [rSl,gSl,bSl].forEach(sl => sl.step = String(s));
+    vSl.step = String(s);
+  }
+
+  function updateSliderNumbers(){
+    rVal.textContent = rSl.value;
+    gVal.textContent = gSl.value;
+    bVal.textContent = bSl.value;
+    vVal.textContent = vSl.value;
+  }
+
+  function currentGuessRGB(){
+    return { r:+rSl.value, g:+gSl.value, b:+bSl.value };
+  }
+  function currentGuessV(){
+    return +vSl.value;
+  }
+
+  function hideTarget(){
+    targetHidden = true;
+    hiddenOverlay.style.display = "flex";
+    exposureCountdown.style.display = "none";
+  }
+  function showTarget(){
+    targetHidden = false;
+    hiddenOverlay.style.display = "none";
+  }
+
+  function applyTargetSwatch(){
+    const mode = modeSel.value;
+    if (mode === "value"){
+      // show grayscale target (value = rounded average)
+      const v = Math.round(avgValue(target));
+      targetSwatch.style.background = grayCss(v);
+    } else {
+      targetSwatch.style.background = rgbCss(target);
+    }
+  }
+
+  function resetResultPanels(){
+    yourOut.textContent = "—";
+    targetOut.textContent = "—";
+    diffOut.textContent = "—";
+    errMain.textContent = "—";
+    errBreakdown.textContent = "—";
+    nudgeTitle.textContent = "—";
+    nudgeText.textContent = "—";
+    revealBtn.disabled = false;
+
+    yourSwatch.style.background = "var(--soft)";
+    targetMini.style.background = "var(--soft)";
+    diffSwatch.style.background = "var(--soft)";
+    yourSwatch.style.filter = "blur(10px)";
+    targetMini.style.filter = "blur(10px)";
+    diffSwatch.style.filter = "blur(10px)";
+
+    submittedThisRound = false;
+  }
+
+  function updateHint(){
+    if (!hintToggle.checked){
+      hintText.style.display = "none";
+      return;
+    }
+    hintText.style.display = "block";
+    hintText.textContent = hintFor(target);
+  }
+
+  function setModeUI(){
+    const m = modeSel.value;
+    rgbPanel.style.display = (m==="rgb") ? "block" : "none";
+    valuePanel.style.display = (m==="value") ? "block" : "none";
+    orderPanel.style.display = (m==="order") ? "block" : "none";
+    setActiveControl(m==="value" ? "v" : "r");
+    applyTargetSwatch();
+    updateHint();
+  }
+
+  function startExposure(){
+    clearExposure();
+
+    showTarget();
+
+    const lock = lockTarget.checked;
+    const exp = exposureSel.value;
+
+    if (lock || exp === "unlimited"){
+      exposureCountdown.style.display = "none";
+      return;
+    }
+
+    const seconds = +exp;
+    exposureEndAt = performance.now() + seconds * 1000;
+    exposureCountdown.style.display = "block";
+
+    const tick = () => {
+      const remainingMs = exposureEndAt - performance.now();
+      const rem = Math.max(0, remainingMs / 1000);
+      exposureCountdown.textContent = rem.toFixed(1) + "s";
+      if (remainingMs <= 0){
+        hideTarget();
+        clearExposure();
+        return;
+      }
+      exposureTimer = requestAnimationFrame(tick);
+    };
+    exposureTimer = requestAnimationFrame(tick);
+  }
+
+  function clearExposure(){
+    if (exposureTimer){
+      cancelAnimationFrame(exposureTimer);
+      exposureTimer = null;
+    }
+    exposureEndAt = null;
+    exposureCountdown.style.display = "none";
+  }
+
+  function newRound(){
+    clearExposure();
+    target = genTarget(paletteSel.value);
+    targetSwatch.style.background = "var(--soft)";
+    applyTargetSwatch();
+    resetResultPanels();
+    updateHint();
+
+    // hide target if exposure is timed (it will show then hide); otherwise show
+    showTarget();
+    startExposure();
+  }
+
+  function revealTargetRGB(){
+    // reveal target values (not your guess)
+    const m = modeSel.value;
+    if (m==="value"){
+      const v = Math.round(avgValue(target));
+      targetOut.textContent = `V=${v} (rgb(${v},${v},${v}))`;
+      targetMini.style.background = grayCss(v);
+    } else {
+      targetOut.textContent = rgbCss(target);
+      targetMini.style.background = rgbCss(target);
+    }
+    targetMini.style.filter = "none";
+    revealBtn.disabled = true;
+  }
+
+  // ---------- scoring / coaching ----------
+  function coachingForRGB(guess, target){
+    const dR = guess.r - target.r;
+    const dG = guess.g - target.g;
+    const dB = guess.b - target.b;
+
+    const vG = avgValue(guess), vT = avgValue(target);
+    const dV = vG - vT;
+
+    const sG = satProxy(guess), sT = satProxy(target);
+    const dS = sG - sT;
+
+    const absDV = Math.abs(dV);
+    const absDS = Math.abs(dS);
+
+    // Rule-based coaching:
+    // 1) Value first if it's meaningfully off.
+    if (absDV >= 18){
+      const dir = dV > 0 ? "too light" : "too dark";
+      return {
+        title: "Value correction",
+        text:
+          `Your overall brightness is ${dir} (ΔV=${dV.toFixed(1)}). ` +
+          `Adjust all channels together: increase/decrease R, G, and B by roughly ${Math.round(absDV)} (then fine-tune hue).`
+      };
+    }
+
+    // 2) Saturation next if value is OK.
+    if (absDS >= 25){
+      const dir = dS > 0 ? "too vivid" : "too muted";
+      return {
+        title: "Saturation correction",
+        text:
+          `Your colour is ${dir} (ΔS=${dS.toFixed(0)} using S≈max−min). ` +
+          (dS > 0
+            ? "Bring channels closer together (pull the highest channel down and/or push the lowest up)."
+            : "Spread channels apart a bit (raise the dominant channel and/or lower the weakest).")
+      };
+    }
+
+    // 3) Hue drift: identify warm/cool bias from channel signs.
+    // Simple heuristic: warm bias if R high vs target and B low vs target, cool bias opposite.
+    if (dR > 10 && dB < -10){
+      return { title: "Hue drift (warm)", text: "You leaned too warm: R is high and B is low. Reduce R and/or raise B slightly while keeping value steady." };
+    }
+    if (dB > 10 && dR < -10){
+      return { title: "Hue drift (cool)", text: "You leaned too cool: B is high and R is low. Reduce B and/or raise R slightly while keeping value steady." };
+    }
+
+    // 4) Otherwise: micro adjustments
+    const biggest = [
+      {k:"R", v:Math.abs(dR), s:dR},
+      {k:"G", v:Math.abs(dG), s:dG},
+      {k:"B", v:Math.abs(dB), s:dB},
+    ].sort((a,b)=>b.v-a.v)[0];
+
+    return {
+      title: "Micro-tuning",
+      text:
+        `You’re close. Biggest remaining channel error is ${biggest.k} (${biggest.s>0?"too high":"too low"} by ${biggest.v}). ` +
+        `Nudge that channel while keeping V≈${vT.toFixed(0)} steady.`
+    };
+  }
+
+  function updateStats(lastScoreText){
+    statAttempts.textContent = String(allScoresRGB.length + allScoresValue.length); // total across modes (simple)
+
+    if (allScoresRGB.length){
+      const best = Math.min(...allScoresRGB);
+      statBest.textContent = String(best);
+
+      const last20 = allScoresRGB.slice(-20);
+      const avg20 = last20.reduce((a,b)=>a+b,0) / last20.length;
+      statAvg20.textContent = avg20.toFixed(1);
+
+      const last50 = allScoresRGB.slice(-50);
+      const med50 = median(last50);
+      statMed50.textContent = (med50==null) ? "—" : med50.toFixed(1);
+    } else {
+      statBest.textContent = "—";
+      statAvg20.textContent = "—";
+      statMed50.textContent = "—";
+    }
+
+    statStreak.textContent = String(streak);
+    statLast.textContent = lastScoreText || "—";
+  }
+
+  function pushHistory(entry){
+    history.unshift(entry);
+    if (history.length > 10) history.pop();
+
+    if (history.length === 0){
+      histBody.innerHTML = `<tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>`;
+      return;
+    }
+
+    histBody.innerHTML = history.map((h, idx) => {
+      const num = history.length - idx;
+
+      const tgtBar = h.mode === "value"
+        ? `<span class="pill">V=${h.targetV}</span><div class="miniBar" style="margin-top:6px;background:${grayCss(h.targetV)};"></div>`
+        : h.mode === "order"
+          ? `<span class="pill">${h.targetOrder}</span><div class="miniBar" style="margin-top:6px;background:${rgbCss(h.target)};"></div>`
+          : `<span class="pill">${rgbCss(h.target)}</span><div class="miniBar" style="margin-top:6px;background:${rgbCss(h.target)};"></div>`;
+
+      const guessBar = h.mode === "value"
+        ? `<span class="pill">V=${h.guessV}</span><div class="miniBar" style="margin-top:6px;background:${grayCss(h.guessV)};"></div>`
+        : h.mode === "order"
+          ? `<span class="pill">${h.guessOrder}</span><div class="miniBar" style="margin-top:6px;background:var(--soft);"></div>`
+          : `<span class="pill">${rgbCss(h.guess)}</span><div class="miniBar" style="margin-top:6px;background:${rgbCss(h.guess)};"></div>`;
+
+      const scoreText = h.mode === "rgb"
+        ? `Manhattan ${h.score} · Euclid ${h.euclid.toFixed(1)}`
+        : h.mode === "value"
+          ? `|ΔV| ${h.score}`
+          : (h.correct ? `✅ Correct` : `❌ Wrong`);
+
+      return `
+        <tr>
+          <td><span class="pill">${num}</span></td>
+          <td>${tgtBar}</td>
+          <td>${guessBar}</td>
+          <td><span class="pill">${scoreText}</span></td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // ---------- submit per mode ----------
+  function submitRGB(){
+    const guess = currentGuessRGB();
+
+    // reveal compare
+    yourOut.textContent = rgbCss(guess);
+    targetOut.textContent = rgbCss(target);
+
+    yourSwatch.style.background = rgbCss(guess);
+    targetMini.style.background = rgbCss(target);
+
+    const diff = absDiffColor(guess, target);
+    diffOut.textContent = rgbCss(diff);
+    diffSwatch.style.background = rgbCss(diff);
+
+    yourSwatch.style.filter = "none";
+    targetMini.style.filter = "none";
+    diffSwatch.style.filter = "none";
+
+    // score
+    const m = manhattan(guess, target);
+    const e = euclid(guess, target);
+
+    const dR = guess.r - target.r;
+    const dG = guess.g - target.g;
+    const dB = guess.b - target.b;
+
+    const vG = avgValue(guess), vT = avgValue(target);
+    const sG = satProxy(guess), sT = satProxy(target);
+
+    errMain.textContent = `${m} (Manhattan)`;
+    errBreakdown.innerHTML =
+      `ΔR=${dR} · ΔG=${dG} · ΔB=${dB}<br>` +
+      `ΔV=${(vG - vT).toFixed(1)} (V≈avg) · ΔS=${(sG - sT).toFixed(0)} (S≈max−min)<br>` +
+      `<span class="muted">Target V=${vT.toFixed(1)}, S=${sT.toFixed(0)} · Guess V=${vG.toFixed(1)}, S=${sG.toFixed(0)}</span>`;
+
+    const coach = coachingForRGB(guess, target);
+    nudgeTitle.textContent = coach.title;
+    nudgeText.textContent = coach.text;
+
+    // streak logic (RGB mode only)
+    allScoresRGB.push(m);
+    if (m <= STREAK_THRESHOLD) streak += 1;
+    else streak = 0;
+
+    // update stats + history
+    const lastScoreText = `RGB Manhattan ${m}`;
+    updateStats(lastScoreText);
+
+    pushHistory({
+      mode:"rgb",
+      target:{...target},
+      guess:{...guess},
+      score:m,
+      euclid:e
+    });
+
+    submittedThisRound = true;
+    revealBtn.disabled = true; // already revealed target RGB in results panel
+  }
+
+  function submitValue(){
+    const guessV = currentGuessV();
+    const targetV = Math.round(avgValue(target));
+    const score = Math.abs(guessV - targetV);
+
+    // reveal compare
+    yourOut.textContent = `V=${guessV} (rgb(${guessV},${guessV},${guessV}))`;
+    targetOut.textContent = `V=${targetV} (rgb(${targetV},${targetV},${targetV}))`;
+
+    yourSwatch.style.background = grayCss(guessV);
+    targetMini.style.background = grayCss(targetV);
+
+    const diffV = Math.abs(guessV - targetV);
+    diffOut.textContent = `ΔV=${diffV}`;
+    diffSwatch.style.background = grayCss(diffV);
+
+    yourSwatch.style.filter = "none";
+    targetMini.style.filter = "none";
+    diffSwatch.style.filter = "none";
+
+    errMain.textContent = `|ΔV| = ${score}`;
+    errBreakdown.textContent =
+      (guessV > targetV)
+        ? `You were too light by ${guessV - targetV}.`
+        : (guessV < targetV)
+          ? `You were too dark by ${targetV - guessV}.`
+          : `Perfect value match.`;
+
+    // coaching
+    const dir = guessV > targetV ? "too light" : (guessV < targetV ? "too dark" : "exact");
+    nudgeTitle.textContent = (dir==="exact") ? "Perfect" : "Value correction";
+    nudgeText.textContent = (dir==="exact")
+      ? "Nice. Now switch to Full RGB and practice keeping this same value while changing hue."
+      : `Your value is ${dir}. Next time, aim around ${targetV} (within ±10 is strong).`;
+
+    allScoresValue.push(score);
+    // streak not counted for value mode
+    updateStats(`Value |ΔV| ${score}`);
+
+    pushHistory({
+      mode:"value",
+      targetV,
+      guessV,
+      score
+    });
+
+    submittedThisRound = true;
+    revealBtn.disabled = true;
+  }
+
+  function submitOrder(){
+    const guessHigh = highestSel.value;
+    const guessLow = lowestSel.value;
+
+    // prevent invalid selection
+    if (guessHigh === guessLow){
+      errMain.textContent = "Invalid";
+      errBreakdown.textContent = "Highest and lowest cannot be the same channel.";
+      nudgeTitle.textContent = "Fix selection";
+      nudgeText.textContent = "Pick different channels for Highest and Lowest, then submit again.";
+      return;
+    }
+
+    const ord = channelOrder(target);
+    const correct = (guessHigh === ord.highest) && (guessLow === ord.lowest);
+
+    // reveal compare (order mode: show target colour and actual order)
+    yourOut.textContent = `Highest=${guessHigh.toUpperCase()} · Lowest=${guessLow.toUpperCase()}`;
+    targetOut.textContent = `${rgbCss(target)} · Order: ${ord.sorted.replaceAll("≥"," ≥ ")}`;
+
+    yourSwatch.style.background = "var(--soft)";
+    targetMini.style.background = rgbCss(target);
+    diffOut.textContent = correct ? "✅ Correct" : "❌ Wrong";
+    diffSwatch.style.background = correct ? "rgb(4,120,87)" : "rgb(185,28,28)";
+
+    yourSwatch.style.filter = "none";
+    targetMini.style.filter = "none";
+    diffSwatch.style.filter = "none";
+
+    errMain.textContent = correct ? "Correct" : "Incorrect";
+    errBreakdown.textContent = correct
+      ? `Nice. Actual highest=${ord.highest.toUpperCase()}, lowest=${ord.lowest.toUpperCase()}.`
+      : `Actual highest=${ord.highest.toUpperCase()}, lowest=${ord.lowest.toUpperCase()}. You chose ${guessHigh.toUpperCase()} / ${guessLow.toUpperCase()}.`;
+
+    // coaching
+    const sT = satProxy(target);
+    const vT = avgValue(target);
+    nudgeTitle.textContent = "What to notice next time";
+    nudgeText.textContent =
+      `Target V≈${vT.toFixed(0)} and S≈${sT.toFixed(0)}. ` +
+      `Try to decide dominance first (which channel leads), then estimate value (light/dark), then saturation (muted/vivid).`;
+
+    // streak not counted for order mode
+    updateStats(correct ? "Order ✅" : "Order ❌");
+
+    pushHistory({
+      mode:"order",
+      target:{...target},
+      guessOrder:`${guessHigh.toUpperCase()}/${guessLow.toUpperCase()}`,
+      targetOrder:`${ord.highest.toUpperCase()}/${ord.lowest.toUpperCase()}`,
+      correct
+    });
+
+    submittedThisRound = true;
+    revealBtn.disabled = true;
+  }
+
+  function submit(){
+    // once you submit, we reveal the target as part of the compare panel; no need to keep hiding
+    showTarget();
+    clearExposure();
+
+    // Always reveal target mini panel on submit (for the “real values” requirement)
+    const m = modeSel.value;
+    if (m==="rgb") submitRGB();
+    else if (m==="value") submitValue();
+    else submitOrder();
+  }
+
+  // ---------- keyboard control ----------
+  function adjustActive(delta){
+    const m = modeSel.value;
+    const step = (event.shiftKey ? 10 : +stepSel.value);
+    const d = delta * step;
+
+    if (m==="value"){
+      const v = clamp(+vSl.value + d, 0, 255);
+      vSl.value = String(v);
+    } else if (m==="rgb"){
+      if (activeControl==="r") rSl.value = String(clamp(+rSl.value + d, 0, 255));
+      if (activeControl==="g") gSl.value = String(clamp(+gSl.value + d, 0, 255));
+      if (activeControl==="b") bSl.value = String(clamp(+bSl.value + d, 0, 255));
+    }
+    updateSliderNumbers();
+
+    // Don’t show any colour preview here (by design)
+  }
+
+  window.addEventListener("keydown", (e) => {
+    // Avoid hijacking when user is on a select
+    const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+    if (tag === "select") return;
+
+    if (e.key === "ArrowLeft"){
+      e.preventDefault();
+      adjustActive(-1);
+    } else if (e.key === "ArrowRight"){
+      e.preventDefault();
+      adjustActive(+1);
+    }
+  });
+
+  // ---------- events ----------
+  [rSl,gSl,bSl,vSl].forEach(sl => sl.addEventListener("input", updateSliderNumbers));
+
+  rLabel.addEventListener("click", () => setActiveControl("r"));
+  gLabel.addEventListener("click", () => setActiveControl("g"));
+  bLabel.addEventListener("click", () => setActiveControl("b"));
+  vLabel.addEventListener("click", () => setActiveControl("v"));
+
+  newBtn.addEventListener("click", newRound);
+  submitBtn.addEventListener("click", submit);
+  revealBtn.addEventListener("click", revealTargetRGB);
+
+  modeSel.addEventListener("change", () => {
+    resetResultPanels();
+    setModeUI();
+    startExposure();
+  });
+
+  paletteSel.addEventListener("change", () => {
+    newRound();
+  });
+
+  exposureSel.addEventListener("change", () => {
+    // restart exposure for current target
+    startExposure();
+  });
+
+  lockTarget.addEventListener("change", () => {
+    startExposure();
+  });
+
+  hintToggle.addEventListener("change", updateHint);
+
+  stepSel.addEventListener("change", () => {
+    setSliderSteps(stepSel.value);
+  });
+
+  // ---------- init ----------
+  setSliderSteps(stepSel.value);
+  updateSliderNumbers();
+  setModeUI();
+  resetResultPanels();
+  setActiveControl("r");
+  newRound();
+})();
+</script>
+</body>
+</html>
