@@ -1,0 +1,2375 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RGB Trainer + Perception Suite</title>
+  <style>
+    :root { --border:#e5e7eb; --text:#111827; --muted:#6b7280; --bg:#ffffff; --soft:#f3f4f6; }
+    * { box-sizing: border-box; }
+    body{
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background: #f7f7f8; color: var(--text);
+    }
+    .wrap{ max-width: 1100px; margin: 24px auto; padding: 16px; }
+    .card{
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    h1{ margin:0 0 6px; font-size: 20px; }
+    .sub{ margin:0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .row{ display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .col{ flex:1; min-width: 320px; }
+    .swatch{
+      width:100%; height: 240px; border-radius: 14px; border: 1px solid var(--border);
+      position: relative; overflow:hidden; background: var(--soft);
+    }
+    .label{
+      position:absolute; left:10px; top:10px; padding:6px 10px;
+      background: rgba(255,255,255,.78); border: 1px solid rgba(0,0,0,.08);
+      border-radius: 999px; font-size: 12px; color: #111;
+      backdrop-filter: blur(6px);
+    }
+    .label.right{ left:auto; right:10px; }
+    .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 12px; }
+    button{
+      border: 1px solid var(--border); background: #111827; color: white;
+      padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 700;
+    }
+    button.secondary{ background:#fff; color:#111827; }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+    .select, .checkbox, .input{
+      border: 1px solid var(--border); background:#fff; color:#111827;
+      padding: 9px 10px; border-radius: 12px; font-size: 14px;
+    }
+    .checkbox input{ vertical-align: middle; margin-right: 6px; }
+    .sliderBlock{ margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+    .sliderRow{ display:flex; align-items:center; gap:12px; margin: 10px 0; }
+    .sliderRow label{
+      width: 54px; font-weight:800; cursor:pointer;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:6px 10px; border-radius: 12px; border: 1px solid var(--border);
+      background: #fff;
+      user-select:none;
+    }
+    .sliderRow label.active{ outline: 2px solid #111827; outline-offset: 1px; }
+    .sliderRow label .k{ opacity:.8; }
+    input[type="range"]{ width: 100%; }
+    .val{ width: 52px; text-align:right; font-variant-numeric: tabular-nums; color: var(--muted); }
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .kpi{
+      border: 1px solid var(--border); border-radius: 14px; padding: 10px;
+      background:#fff;
+    }
+    .kpi .k{ color: var(--muted); font-size: 12px; }
+    .kpi .v{ font-weight: 900; font-size: 18px; font-variant-numeric: tabular-nums; }
+    .pill{
+      display:inline-block; padding: 3px 8px; border-radius: 999px; border:1px solid var(--border);
+      font-size: 12px; color: var(--muted); background:#fff;
+      font-variant-numeric: tabular-nums;
+    }
+    .note{ color: var(--muted); font-size: 12px; margin-top: 10px; line-height: 1.35; }
+    .tipbox{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      padding:12px;
+      margin-top:12px;
+    }
+    .tipbox h2{ margin:0 0 6px; font-size: 14px; }
+    .tipbox ul{ margin:8px 0 0 18px; color:var(--muted); font-size: 13px; line-height: 1.35; }
+    table{ width:100%; border-collapse: collapse; margin-top: 12px; }
+    th, td{ text-align:left; padding: 10px; border-top: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+    th{ color: var(--muted); font-weight: 800; }
+    .miniBar{ height: 18px; border-radius:999px; border:1px solid var(--border); }
+    .hiddenOverlay{
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-weight:900; letter-spacing:.02em;
+      color:#111827; background: rgba(243,244,246,.94);
+      backdrop-filter: blur(2px);
+    }
+    .danger{ color:#b91c1c; }
+    .good{ color:#047857; }
+    .sectionTitle{ margin: 0 0 8px; font-size:16px; }
+    .muted{ color: var(--muted); }
+
+    /* suite */
+    .gamePanel{ display:none; margin-top: 14px; }
+    .gamePanel.active{ display:block; }
+    .canvasWrap{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fff;
+      overflow:hidden;
+    }
+    canvas{ display:block; width:100%; height:240px; }
+    .bigCanvas canvas{ height: 340px; }
+    .btnRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Perception Trainer Suite</h1>
+      <p class="sub">RGB Trainer + additional drills (line thickness, aspect ratio, angle, mental rotation, BPM, cursor precision, tracking, rapid target switching).</p>
+
+      <div class="controls" style="margin-top:0;">
+        <select id="gameSelect" class="select" title="Choose a drill">
+          <option value="rgb" selected>RGB Trainer</option>
+          <option value="lt">Line thickness</option>
+          <option value="ar">Aspect ratio</option>
+          <option value="ang">Angle estimation</option>
+          <option value="rot">Mental rotation</option>
+          <option value="bpm">BPM estimation</option>
+          <option value="aim">Cursor precision (Fitts)</option>
+          <option value="track">Tracking moving dot</option>
+          <option value="rts">Rapid target switching</option>
+        </select>
+      </div>
+
+      <!-- =======================
+           RGB TRAINER (original)
+           ======================= -->
+      <div id="panel_rgb" class="gamePanel active">
+        <p class="sub" style="margin-top:12px;">
+          You can see the target briefly (optional exposure). You <b>cannot see your guessed colour</b> until you submit.
+          Click the R/G/B label to select a slider, then use <b>←/→</b> to adjust (hold <b>Shift</b> for ±10).
+        </p>
+
+        <div class="row">
+          <div class="col">
+            <div id="targetSwatch" class="swatch">
+              <div class="label" id="targetLabel">Target</div>
+              <div class="label right" id="exposureCountdown" style="display:none;">5.0s</div>
+              <div id="hiddenOverlay" class="hiddenOverlay" style="display:none;">HIDDEN</div>
+            </div>
+
+            <div class="controls">
+              <button id="newBtn" class="secondary" type="button">New round</button>
+              <button id="submitBtn" type="button">Submit</button>
+              <button id="revealBtn" class="secondary" type="button" disabled>Reveal target RGB</button>
+
+              <select id="mode" class="select" title="Training mode">
+                <option value="rgb" selected>Full RGB</option>
+                <option value="value">Value only (grayscale)</option>
+                <option value="order">Channel order only</option>
+              </select>
+
+              <select id="palette" class="select" title="Target generator">
+                <option value="any">Any RGB (hard)</option>
+                <option value="muted" selected>Muted / vintage</option>
+                <option value="pastel">Pastel</option>
+                <option value="dark">Dark</option>
+              </select>
+
+              <select id="exposure" class="select" title="How long the target is visible">
+                <option value="unlimited" selected>Exposure: unlimited</option>
+                <option value="2">Exposure: 2s</option>
+                <option value="5">Exposure: 5s</option>
+                <option value="10">Exposure: 10s</option>
+              </select>
+
+              <label class="checkbox" title="Keep target visible even if exposure is set">
+                <input id="lockTarget" type="checkbox" />
+                Lock target
+              </label>
+
+              <label class="checkbox" title="Optional: show a non-numeric hint">
+                <input id="hintToggle" type="checkbox" />
+                Hint (no numbers)
+              </label>
+
+              <select id="step" class="select" title="Slider step size">
+                <option value="5" selected>Step: 5</option>
+                <option value="2">Step: 2</option>
+                <option value="1">Step: 1</option>
+              </select>
+            </div>
+
+            <div class="note" id="hintText" style="display:none;"></div>
+
+            <!-- MODE: Full RGB -->
+            <div id="rgbPanel" class="sliderBlock">
+              <div class="sliderRow">
+                <label id="rLabel" for="r"><span class="k">R</span><span class="pill" id="rHotkey">←→</span></label>
+                <input id="r" type="range" min="0" max="255" value="128" />
+                <div class="val" id="rVal">128</div>
+              </div>
+              <div class="sliderRow">
+                <label id="gLabel" for="g"><span class="k">G</span><span class="pill" id="gHotkey">←→</span></label>
+                <input id="g" type="range" min="0" max="255" value="128" />
+                <div class="val" id="gVal">128</div>
+              </div>
+              <div class="sliderRow">
+                <label id="bLabel" for="b"><span class="k">B</span><span class="pill" id="bHotkey">←→</span></label>
+                <input id="b" type="range" min="0" max="255" value="128" />
+                <div class="val" id="bVal">128</div>
+              </div>
+
+              <div class="note">
+                Value proxy: <span class="pill">V ≈ (R+G+B)/3</span> |
+                Saturation proxy: <span class="pill">S ≈ max(R,G,B) − min(R,G,B)</span>
+              </div>
+            </div>
+
+            <!-- MODE: Value Only -->
+            <div id="valuePanel" class="sliderBlock" style="display:none;">
+              <div class="sliderRow">
+                <label id="vLabel" for="v"><span class="k">V</span><span class="pill">←→</span></label>
+                <input id="v" type="range" min="0" max="255" value="128" />
+                <div class="val" id="vVal">128</div>
+              </div>
+              <div class="tipbox">
+                <h2>Value ranges (0–255)</h2>
+                <ul>
+                  <li><b>Very dark:</b> 0–60</li>
+                  <li><b>Dark:</b> 60–110</li>
+                  <li><b>Mid:</b> 110–160</li>
+                  <li><b>Light:</b> 160–210</li>
+                  <li><b>Very light:</b> 210–255</li>
+                </ul>
+                <div class="note">In this mode the target is shown in grayscale (R=G=B).</div>
+              </div>
+            </div>
+
+            <!-- MODE: Channel Order Only -->
+            <div id="orderPanel" class="sliderBlock" style="display:none;">
+              <div class="tipbox">
+                <h2>Pick channel dominance (no numbers)</h2>
+                <div class="note">Choose which channel you think is the <b>highest</b> and the <b>lowest</b>.</div>
+                <div class="controls" style="margin-top:10px;">
+                  <span class="pill">Highest</span>
+                  <select id="highest" class="select">
+                    <option value="r">R</option>
+                    <option value="g">G</option>
+                    <option value="b">B</option>
+                  </select>
+                  <span class="pill">Lowest</span>
+                  <select id="lowest" class="select">
+                    <option value="r">R</option>
+                    <option value="g">G</option>
+                    <option value="b">B</option>
+                  </select>
+                </div>
+                <div class="note">Tip: muted colours have channels closer together; vivid colours have one channel far above the others.</div>
+              </div>
+            </div>
+
+            <!-- Results / Compare after -->
+            <div class="grid3" style="margin-top:12px;">
+              <div class="kpi">
+                <div class="k">Your submission</div>
+                <div class="v" id="yourOut">—</div>
+                <div class="note" style="margin-top:8px;">
+                  <div id="yourSwatch" style="height:48px;border-radius:12px;border:1px solid var(--border);background:var(--soft);filter:blur(10px);"></div>
+                </div>
+              </div>
+              <div class="kpi">
+                <div class="k">Target</div>
+                <div class="v" id="targetOut">—</div>
+                <div class="note" style="margin-top:8px;">
+                  <div id="targetMini" style="height:48px;border-radius:12px;border:1px solid var(--border);background:var(--soft);filter:blur(10px);"></div>
+                </div>
+              </div>
+              <div class="kpi">
+                <div class="k">Difference (abs Δ)</div>
+                <div class="v" id="diffOut">—</div>
+                <div class="note" style="margin-top:8px;">
+                  <div id="diffSwatch" style="height:48px;border-radius:12px;border:1px solid var(--border);background:var(--soft);filter:blur(10px);"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Diagnostics -->
+            <div class="grid2" style="margin-top:12px;">
+              <div class="kpi">
+                <div class="k">Errors</div>
+                <div class="v" id="errMain">—</div>
+                <div class="note" id="errBreakdown" style="margin-top:8px;">—</div>
+              </div>
+              <div class="kpi">
+                <div class="k">Coaching nudge</div>
+                <div class="v" id="nudgeTitle">—</div>
+                <div class="note" id="nudgeText" style="margin-top:8px;">—</div>
+              </div>
+            </div>
+
+            <div class="tipbox">
+              <h2>Numeric cheat-sheet (full RGB mode)</h2>
+              <ul>
+                <li><b>Brightness (value):</b> V ≈ (R+G+B)/3
+                  <span class="pill">0–60 very dark</span>
+                  <span class="pill">60–110 dark</span>
+                  <span class="pill">110–160 mid</span>
+                  <span class="pill">160–210 light</span>
+                  <span class="pill">210–255 very light</span>
+                </li>
+                <li><b>Muted vs vivid:</b> S ≈ max−min
+                  <span class="pill">0–20 very muted</span>
+                  <span class="pill">20–50 muted</span>
+                  <span class="pill">50–90 moderate</span>
+                  <span class="pill">90–170 vivid</span>
+                </li>
+                <li><b>Channel order:</b> decide highest/lowest first (e.g., warm beige often R≥G≥B, cool slate often B≥G≥R).</li>
+                <li><b>Workflow:</b> set value (move all channels together), set saturation (spread or compress channels), then fix hue (which channel leads).</li>
+              </ul>
+            </div>
+
+            <div class="note">
+              Keyboard: click R/G/B (or V) label → use ←/→. Hold Shift for ±10. (Your guessed colour remains hidden until Submit.)
+            </div>
+          </div>
+
+          <div class="col">
+            <h2 class="sectionTitle">Progress</h2>
+            <p class="sub" style="margin-top:0;">
+              Attempts, best/average/median, and a streak for “good” rounds. (Threshold = Manhattan ≤ <span class="pill" id="streakThresholdPill">40</span> in RGB mode.)
+            </p>
+
+            <div class="grid2">
+              <div class="kpi">
+                <div class="k">Attempts</div>
+                <div class="v" id="statAttempts">0</div>
+              </div>
+              <div class="kpi">
+                <div class="k">Best (lowest Manhattan)</div>
+                <div class="v" id="statBest">—</div>
+              </div>
+              <div class="kpi">
+                <div class="k">Average (last 20)</div>
+                <div class="v" id="statAvg20">—</div>
+              </div>
+              <div class="kpi">
+                <div class="k">Median (last 50)</div>
+                <div class="v" id="statMed50">—</div>
+              </div>
+              <div class="kpi">
+                <div class="k">Streak (≤ threshold)</div>
+                <div class="v" id="statStreak">0</div>
+              </div>
+              <div class="kpi">
+                <div class="k">Last result</div>
+                <div class="v" id="statLast">—</div>
+              </div>
+            </div>
+
+            <h2 class="sectionTitle" style="margin-top:16px;">History (last 10)</h2>
+            <div class="card" style="padding:0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Target</th>
+                    <th>Your submission</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody id="histBody">
+                  <tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="note">
+              Scores shown as Manhattan (RGB mode) or |ΔV| (Value mode) or Correct/Incorrect (Order mode).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =======================
+           LINE THICKNESS
+           ======================= -->
+      <div id="panel_lt" class="gamePanel">
+        <h2 class="sectionTitle">Line thickness</h2>
+        <p class="sub">Guess the line thickness in px. Submit to reveal. (Note: perceived thickness depends on viewing distance + display scaling.)</p>
+
+        <div class="canvasWrap"><canvas id="lt_canvas"></canvas></div>
+
+        <div class="controls">
+          <button id="lt_new" class="secondary" type="button">New</button>
+          <button id="lt_submit" type="button">Submit</button>
+          <span class="pill">Step</span>
+          <select id="lt_step" class="select">
+            <option value="1">1px</option>
+            <option value="0.5" selected>0.5px</option>
+            <option value="0.25">0.25px</option>
+          </select>
+        </div>
+
+        <div class="sliderBlock">
+          <div class="sliderRow">
+            <label for="lt_guess"><span class="k">px</span><span class="pill">—</span></label>
+            <input id="lt_guess" type="range" min="0.5" max="40" step="0.5" value="10" />
+            <div class="val" id="lt_guess_val">10.00</div>
+          </div>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi"><div class="k">Actual</div><div class="v" id="lt_actual">—</div></div>
+          <div class="kpi"><div class="k">Abs error</div><div class="v" id="lt_err">—</div></div>
+          <div class="kpi"><div class="k">Avg error (last 10)</div><div class="v" id="lt_avg10">—</div></div>
+        </div>
+
+        <div class="card" style="padding:0; margin-top:12px;">
+          <table>
+            <thead><tr><th>#</th><th>Actual</th><th>Guess</th><th>Error</th></tr></thead>
+            <tbody id="lt_hist"><tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =======================
+           ASPECT RATIO
+           ======================= -->
+      <div id="panel_ar" class="gamePanel">
+        <h2 class="sectionTitle">Aspect ratio</h2>
+        <p class="sub">A rectangle is shown. Choose the closest ratio.</p>
+
+        <div class="canvasWrap"><canvas id="ar_canvas"></canvas></div>
+
+        <div class="controls">
+          <button id="ar_new" class="secondary" type="button">New</button>
+          <button id="ar_submit" type="button">Submit</button>
+          <span class="pill">Choices</span>
+          <select id="ar_pool" class="select">
+            <option value="common" selected>Common (4:3, 3:2, 16:9, 1:1, 21:9)</option>
+            <option value="extended">Extended (+ 5:4, 2:1, 9:16)</option>
+          </select>
+        </div>
+
+        <div class="tipbox">
+          <h2>Pick one</h2>
+          <div class="controls" id="ar_choices" style="margin-top:8px;"></div>
+          <div class="note" id="ar_status">—</div>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi"><div class="k">Actual ratio</div><div class="v" id="ar_actual">—</div></div>
+          <div class="kpi"><div class="k">Your choice</div><div class="v" id="ar_your">—</div></div>
+          <div class="kpi"><div class="k">Result</div><div class="v" id="ar_result">—</div></div>
+        </div>
+
+        <div class="card" style="padding:0; margin-top:12px;">
+          <table>
+            <thead><tr><th>#</th><th>Actual</th><th>You</th><th>Result</th></tr></thead>
+            <tbody id="ar_hist"><tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =======================
+           ANGLE ESTIMATION
+           ======================= -->
+      <div id="panel_ang" class="gamePanel">
+        <h2 class="sectionTitle">Angle estimation</h2>
+        <p class="sub">A line is rotated by a random angle (0–179°). Estimate the angle.</p>
+
+        <div class="canvasWrap"><canvas id="ang_canvas"></canvas></div>
+
+        <div class="controls">
+          <button id="ang_new" class="secondary" type="button">New</button>
+          <button id="ang_submit" type="button">Submit</button>
+          <span class="pill">Step</span>
+          <select id="ang_step" class="select">
+            <option value="5" selected>5°</option>
+            <option value="2">2°</option>
+            <option value="1">1°</option>
+          </select>
+        </div>
+
+        <div class="sliderBlock">
+          <div class="sliderRow">
+            <label for="ang_guess"><span class="k">°</span><span class="pill">←→</span></label>
+            <input id="ang_guess" type="range" min="0" max="179" step="5" value="90" />
+            <div class="val" id="ang_guess_val">90</div>
+          </div>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi"><div class="k">Actual</div><div class="v" id="ang_actual">—</div></div>
+          <div class="kpi"><div class="k">Abs error</div><div class="v" id="ang_err">—</div></div>
+          <div class="kpi"><div class="k">Avg error (last 10)</div><div class="v" id="ang_avg10">—</div></div>
+        </div>
+
+        <div class="card" style="padding:0; margin-top:12px;">
+          <table>
+            <thead><tr><th>#</th><th>Actual</th><th>Guess</th><th>Error</th></tr></thead>
+            <tbody id="ang_hist"><tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =======================
+           MENTAL ROTATION
+           ======================= -->
+      <div id="panel_rot" class="gamePanel">
+        <h2 class="sectionTitle">Mental rotation</h2>
+        <p class="sub">Two shapes are shown. Decide if the right shape is the same as the left shape (rotation allowed) or different (mirrored or altered).</p>
+
+        <div class="canvasWrap bigCanvas"><canvas id="rot_canvas"></canvas></div>
+
+        <div class="controls">
+          <button id="rot_new" class="secondary" type="button">New</button>
+          <button id="rot_same" type="button">Same</button>
+          <button id="rot_diff" type="button" class="secondary">Different</button>
+          <label class="checkbox" title="Hide shapes after a short time (flash training)">
+            <input id="rot_flash" type="checkbox" />
+            Flash (2s)
+          </label>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi"><div class="k">Result</div><div class="v" id="rot_result">—</div></div>
+          <div class="kpi"><div class="k">RT (ms)</div><div class="v" id="rot_rt">—</div></div>
+          <div class="kpi"><div class="k">Accuracy (last 20)</div><div class="v" id="rot_acc">—</div></div>
+        </div>
+
+        <div class="card" style="padding:0; margin-top:12px;">
+          <table>
+            <thead><tr><th>#</th><th>Truth</th><th>You</th><th>RT</th></tr></thead>
+            <tbody id="rot_hist"><tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =======================
+           BPM ESTIMATION
+           ======================= -->
+      <div id="panel_bpm" class="gamePanel">
+        <h2 class="sectionTitle">BPM estimation</h2>
+        <p class="sub">Press Play: you’ll hear a click track for a few seconds. Estimate the BPM.</p>
+
+        <div class="tipbox">
+          <h2>Controls</h2>
+          <div class="controls" style="margin-top:8px;">
+            <button id="bpm_new" class="secondary" type="button">New</button>
+            <button id="bpm_play" type="button">Play</button>
+            <button id="bpm_submit" type="button" class="secondary">Submit</button>
+            <span class="pill">Duration</span>
+            <select id="bpm_dur" class="select">
+              <option value="4" selected>4s</option>
+              <option value="6">6s</option>
+              <option value="8">8s</option>
+            </select>
+          </div>
+          <div class="sliderBlock">
+            <div class="sliderRow">
+              <label for="bpm_guess"><span class="k">BPM</span><span class="pill">—</span></label>
+              <input id="bpm_guess" type="range" min="50" max="200" step="1" value="120" />
+              <div class="val" id="bpm_guess_val">120</div>
+            </div>
+          </div>
+          <div class="note" id="bpm_status">Tip: count beats for 2 seconds × 30 ≈ BPM (rough).</div>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi"><div class="k">Actual</div><div class="v" id="bpm_actual">—</div></div>
+          <div class="kpi"><div class="k">Abs error</div><div class="v" id="bpm_err">—</div></div>
+          <div class="kpi"><div class="k">Avg error (last 10)</div><div class="v" id="bpm_avg10">—</div></div>
+        </div>
+
+        <div class="card" style="padding:0; margin-top:12px;">
+          <table>
+            <thead><tr><th>#</th><th>Actual</th><th>Guess</th><th>Error</th></tr></thead>
+            <tbody id="bpm_hist"><tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =======================
+           CURSOR PRECISION (FITTS)
+           ======================= -->
+      <div id="panel_aim" class="gamePanel">
+        <h2 class="sectionTitle">Cursor control precision (Fitts)</h2>
+        <p class="sub">Click the highlighted target as fast as possible. Measures time + misses.</p>
+
+        <div class="canvasWrap bigCanvas"><canvas id="aim_canvas"></canvas></div>
+
+        <div class="controls">
+          <button id="aim_start" type="button">Start (20 targets)</button>
+          <button id="aim_stop" class="secondary" type="button">Stop</button>
+          <span class="pill">Target size</span>
+          <select id="aim_size" class="select">
+            <option value="18">18px (hard)</option>
+            <option value="26" selected>26px</option>
+            <option value="36">36px (easy)</option>
+          </select>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi"><div class="k">Clicks</div><div class="v" id="aim_done">0/0</div></div>
+          <div class="kpi"><div class="k">Time</div><div class="v" id="aim_time">—</div></div>
+          <div class="kpi"><div class="k">Misses</div><div class="v" id="aim_miss">—</div></div>
+        </div>
+
+        <div class="note" id="aim_note">Tip: keep your wrist stable; move from elbow/shoulder for long jumps.</div>
+      </div>
+
+      <!-- =======================
+           TRACKING MOVING DOT
+           ======================= -->
+      <div id="panel_track" class="gamePanel">
+        <h2 class="sectionTitle">Tracking moving dot</h2>
+        <p class="sub">Keep your cursor as close to the moving dot as possible for the duration. Score = average distance (px) — lower is better.</p>
+
+        <div class="canvasWrap bigCanvas"><canvas id="track_canvas"></canvas></div>
+
+        <div class="controls">
+          <button id="track_start" type="button">Start (8s)</button>
+          <button id="track_stop" class="secondary" type="button">Stop</button>
+          <span class="pill">Speed</span>
+          <select id="track_speed" class="select">
+            <option value="0.9">Slow</option>
+            <option value="1.2" selected>Normal</option>
+            <option value="1.6">Fast</option>
+          </select>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi"><div class="k">Avg distance</div><div class="v" id="track_score">—</div></div>
+          <div class="kpi"><div class="k">Best (session)</div><div class="v" id="track_best">—</div></div>
+          <div class="kpi"><div class="k">Time left</div><div class="v" id="track_left">—</div></div>
+        </div>
+      </div>
+
+      <!-- =======================
+           RAPID TARGET SWITCHING
+           ======================= -->
+      <div id="panel_rts" class="gamePanel">
+        <h2 class="sectionTitle">Rapid target switching</h2>
+        <p class="sub">Click targets 1→2→3… as fast as possible. Measures total time + errors.</p>
+
+        <div class="canvasWrap bigCanvas"><canvas id="rts_canvas"></canvas></div>
+
+        <div class="controls">
+          <button id="rts_start" type="button">Start (12 targets)</button>
+          <button id="rts_stop" class="secondary" type="button">Stop</button>
+          <span class="pill">Spread</span>
+          <select id="rts_spread" class="select">
+            <option value="0.6">Tight</option>
+            <option value="0.8" selected>Normal</option>
+            <option value="1.0">Wide</option>
+          </select>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi"><div class="k">Progress</div><div class="v" id="rts_prog">0/0</div></div>
+          <div class="kpi"><div class="k">Time</div><div class="v" id="rts_time">—</div></div>
+          <div class="kpi"><div class="k">Errors</div><div class="v" id="rts_err">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // =========================================================
+  // Shared utilities (safe to reuse across mini-games)
+  // =========================================================
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const randInt = (lo, hi) => Math.floor(Math.random() * (hi - lo + 1)) + lo;
+  const randFloat = (lo, hi) => lo + Math.random() * (hi - lo);
+  const el = (id) => document.getElementById(id);
+
+  function median(nums){
+    if (!nums.length) return null;
+    const a = [...nums].sort((x,y)=>x-y);
+    const mid = Math.floor(a.length/2);
+    return a.length % 2 ? a[mid] : (a[mid-1] + a[mid]) / 2;
+  }
+
+  function fitCanvas(canvas){
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS px
+    return ctx;
+  }
+
+  // =========================================================
+  // Game selector
+  // =========================================================
+  const panels = ["rgb","lt","ar","ang","rot","bpm","aim","track","rts"].map(k => ({k, node: el(`panel_${k}`)}));
+  const gameSelect = el("gameSelect");
+
+  function setActiveGame(key){
+    panels.forEach(p => p.node.classList.toggle("active", p.k === key));
+    // resize canvases on show
+    if (key === "lt") lt_draw();
+    if (key === "ar") ar_draw();
+    if (key === "ang") ang_draw();
+    if (key === "rot") rot_draw();
+    if (key === "aim") aim_draw();
+    if (key === "track") track_draw();
+    if (key === "rts") rts_draw();
+  }
+  gameSelect.addEventListener("change", (e) => setActiveGame(e.target.value));
+
+  // =========================================================
+  // RGB TRAINER (your original JS, unmodified except scoped)
+  // =========================================================
+  // ---------- rgb utils ----------
+  const rgbCss = (c) => `rgb(${c.r}, ${c.g}, ${c.b})`;
+  const grayCss = (v) => `rgb(${v}, ${v}, ${v})`;
+  const avgValue = (c) => (c.r + c.g + c.b) / 3;
+  const satProxy = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+  const manhattan = (a,b) => Math.abs(a.r-b.r) + Math.abs(a.g-b.g) + Math.abs(a.b-b.b);
+  const euclid = (a,b) => {
+    const dr=a.r-b.r, dg=a.g-b.g, db=a.b-b.b;
+    return Math.sqrt(dr*dr+dg*dg+db*db);
+  };
+
+  function toHsl({r,g,b}) {
+    r/=255; g/=255; b/=255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    const d = max - min;
+    let h = 0;
+    if (d !== 0) {
+      switch (max) {
+        case r: h = ((g - b) / d) % 6; break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    const l = (max + min) / 2;
+    const s = d === 0 ? 0 : d / (1 - Math.abs(2*l - 1));
+    return {h, s, l};
+  }
+
+  function hintFor(rgb){
+    const {h,s,l} = toHsl(rgb);
+    const hueName =
+      (h < 15 || h >= 345) ? "red" :
+      (h < 45) ? "orange" :
+      (h < 70) ? "yellow" :
+      (h < 165) ? "green" :
+      (h < 200) ? "cyan" :
+      (h < 260) ? "blue" :
+      (h < 325) ? "purple" : "magenta";
+
+    const sat = s < 0.18 ? "very muted" : s < 0.35 ? "muted" : s < 0.6 ? "moderate" : "vivid";
+    const val = l < 0.25 ? "dark" : l < 0.5 ? "mid-dark" : l < 0.75 ? "mid-light" : "light";
+    return `Hint: ${val}, ${sat}, leaning ${hueName}.`;
+  }
+
+  function genTarget(palette){
+    let r,g,b;
+    if (palette === "muted") {
+      const base = randInt(60, 200);
+      r = clamp(base + randInt(-35, 35), 0, 255);
+      g = clamp(base + randInt(-35, 35), 0, 255);
+      b = clamp(base + randInt(-35, 35), 0, 255);
+      const pick = randInt(0,2);
+      if (pick===0) r = clamp(r + randInt(10,40),0,255);
+      if (pick===1) g = clamp(g + randInt(10,40),0,255);
+      if (pick===2) b = clamp(b + randInt(10,40),0,255);
+    } else if (palette === "pastel") {
+      r = randInt(160, 255);
+      g = randInt(160, 255);
+      b = randInt(160, 255);
+      const drop = randInt(0,2);
+      if (drop===0) r = clamp(r - randInt(0,70),0,255);
+      if (drop===1) g = clamp(g - randInt(0,70),0,255);
+      if (drop===2) b = clamp(b - randInt(0,70),0,255);
+    } else if (palette === "dark") {
+      r = randInt(0, 120);
+      g = randInt(0, 120);
+      b = randInt(0, 120);
+      const boost = randInt(0,2);
+      if (boost===0) r = clamp(r + randInt(0,90),0,255);
+      if (boost===1) g = clamp(g + randInt(0,90),0,255);
+      if (boost===2) b = clamp(b + randInt(0,90),0,255);
+    } else {
+      r = randInt(0,255); g = randInt(0,255); b = randInt(0,255);
+    }
+    return {r,g,b};
+  }
+
+  function absDiffColor(a,b){
+    return { r: Math.abs(a.r-b.r), g: Math.abs(a.g-b.g), b: Math.abs(a.b-b.b) };
+  }
+
+  function channelOrder(c){
+    const arr = [
+      {k:"r", v:c.r},
+      {k:"g", v:c.g},
+      {k:"b", v:c.b}
+    ].sort((x,y)=>y.v-x.v);
+    return { highest: arr[0].k, lowest: arr[2].k, sorted: arr.map(x=>x.k).join("≥") };
+  }
+
+  // ---------- rgb elements ----------
+  const targetSwatch = el("targetSwatch");
+  const hiddenOverlay = el("hiddenOverlay");
+  const exposureCountdown = el("exposureCountdown");
+
+  const newBtn = el("newBtn");
+  const submitBtn = el("submitBtn");
+  const revealBtn = el("revealBtn");
+
+  const modeSel = el("mode");
+  const paletteSel = el("palette");
+  const exposureSel = el("exposure");
+  const lockTarget = el("lockTarget");
+  const hintToggle = el("hintToggle");
+  const hintText = el("hintText");
+  const stepSel = el("step");
+
+  const rgbPanel = el("rgbPanel");
+  const valuePanel = el("valuePanel");
+  const orderPanel = el("orderPanel");
+
+  const rSl = el("r"), gSl = el("g"), bSl = el("b");
+  const rVal = el("rVal"), gVal = el("gVal"), bVal = el("bVal");
+  const rLabel = el("rLabel"), gLabel = el("gLabel"), bLabel = el("bLabel");
+
+  const vSl = el("v"), vVal = el("vVal");
+  const vLabel = el("vLabel");
+
+  const highestSel = el("highest");
+  const lowestSel = el("lowest");
+
+  const yourOut = el("yourOut");
+  const targetOut = el("targetOut");
+  const diffOut = el("diffOut");
+  const yourSwatch = el("yourSwatch");
+  const targetMini = el("targetMini");
+  const diffSwatch = el("diffSwatch");
+
+  const errMain = el("errMain");
+  const errBreakdown = el("errBreakdown");
+  const nudgeTitle = el("nudgeTitle");
+  const nudgeText = el("nudgeText");
+
+  const histBody = el("histBody");
+
+  const statAttempts = el("statAttempts");
+  const statBest = el("statBest");
+  const statAvg20 = el("statAvg20");
+  const statMed50 = el("statMed50");
+  const statStreak = el("statStreak");
+  const statLast = el("statLast");
+
+  const streakThresholdPill = el("streakThresholdPill");
+  const STREAK_THRESHOLD = 40;
+  streakThresholdPill.textContent = String(STREAK_THRESHOLD);
+
+  // ---------- rgb state ----------
+  let target = genTarget(paletteSel.value);
+  let exposureTimer = null;
+  let exposureEndAt = null;
+
+  const historyRGB = []; // newest first, max 10 display
+  const allScoresRGB = [];   // Manhattan
+  const allScoresValue = []; // abs ΔV
+  let streak = 0;
+
+  let activeControl = "r"; // "r"|"g"|"b"|"v"
+
+  function setActiveControl(k){
+    activeControl = k;
+    [rLabel,gLabel,bLabel].forEach(x=>x.classList.remove("active"));
+    if (k==="r") rLabel.classList.add("active");
+    if (k==="g") gLabel.classList.add("active");
+    if (k==="b") bLabel.classList.add("active");
+    if (k==="v") vLabel.classList.add("active");
+    if (k!=="v") vLabel.classList.remove("active");
+  }
+
+  function setSliderSteps(step){
+    const s = +step;
+    [rSl,gSl,bSl].forEach(sl => sl.step = String(s));
+    vSl.step = String(s);
+  }
+
+  function updateSliderNumbers(){
+    rVal.textContent = rSl.value;
+    gVal.textContent = gSl.value;
+    bVal.textContent = bSl.value;
+    vVal.textContent = vSl.value;
+  }
+
+  function currentGuessRGB(){ return { r:+rSl.value, g:+gSl.value, b:+bSl.value }; }
+  function currentGuessV(){ return +vSl.value; }
+
+  function hideTarget(){
+    hiddenOverlay.style.display = "flex";
+    exposureCountdown.style.display = "none";
+  }
+  function showTarget(){
+    hiddenOverlay.style.display = "none";
+  }
+
+  function applyTargetSwatch(){
+    const mode = modeSel.value;
+    if (mode === "value"){
+      const v = Math.round(avgValue(target));
+      targetSwatch.style.background = grayCss(v);
+    } else {
+      targetSwatch.style.background = rgbCss(target);
+    }
+  }
+
+  function resetResultPanels(){
+    yourOut.textContent = "—";
+    targetOut.textContent = "—";
+    diffOut.textContent = "—";
+    errMain.textContent = "—";
+    errBreakdown.textContent = "—";
+    nudgeTitle.textContent = "—";
+    nudgeText.textContent = "—";
+    revealBtn.disabled = false;
+
+    yourSwatch.style.background = "var(--soft)";
+    targetMini.style.background = "var(--soft)";
+    diffSwatch.style.background = "var(--soft)";
+    yourSwatch.style.filter = "blur(10px)";
+    targetMini.style.filter = "blur(10px)";
+    diffSwatch.style.filter = "blur(10px)";
+  }
+
+  function updateHint(){
+    if (!hintToggle.checked){
+      hintText.style.display = "none";
+      return;
+    }
+    hintText.style.display = "block";
+    hintText.textContent = hintFor(target);
+  }
+
+  function setModeUI(){
+    const m = modeSel.value;
+    rgbPanel.style.display = (m==="rgb") ? "block" : "none";
+    valuePanel.style.display = (m==="value") ? "block" : "none";
+    orderPanel.style.display = (m==="order") ? "block" : "none";
+    setActiveControl(m==="value" ? "v" : "r");
+    applyTargetSwatch();
+    updateHint();
+  }
+
+  function startExposure(){
+    clearExposure();
+    showTarget();
+
+    const lock = lockTarget.checked;
+    const exp = exposureSel.value;
+
+    if (lock || exp === "unlimited"){
+      exposureCountdown.style.display = "none";
+      return;
+    }
+
+    const seconds = +exp;
+    exposureEndAt = performance.now() + seconds * 1000;
+    exposureCountdown.style.display = "block";
+
+    const tick = () => {
+      const remainingMs = exposureEndAt - performance.now();
+      const rem = Math.max(0, remainingMs / 1000);
+      exposureCountdown.textContent = rem.toFixed(1) + "s";
+      if (remainingMs <= 0){
+        hideTarget();
+        clearExposure();
+        return;
+      }
+      exposureTimer = requestAnimationFrame(tick);
+    };
+    exposureTimer = requestAnimationFrame(tick);
+  }
+
+  function clearExposure(){
+    if (exposureTimer){
+      cancelAnimationFrame(exposureTimer);
+      exposureTimer = null;
+    }
+    exposureEndAt = null;
+    exposureCountdown.style.display = "none";
+  }
+
+  function newRound(){
+    clearExposure();
+    target = genTarget(paletteSel.value);
+    targetSwatch.style.background = "var(--soft)";
+    applyTargetSwatch();
+    resetResultPanels();
+    updateHint();
+    showTarget();
+    startExposure();
+  }
+
+  function revealTargetRGB(){
+    const m = modeSel.value;
+    if (m==="value"){
+      const v = Math.round(avgValue(target));
+      targetOut.textContent = `V=${v} (rgb(${v},${v},${v}))`;
+      targetMini.style.background = grayCss(v);
+    } else {
+      targetOut.textContent = rgbCss(target);
+      targetMini.style.background = rgbCss(target);
+    }
+    targetMini.style.filter = "none";
+    revealBtn.disabled = true;
+  }
+
+  function coachingForRGB(guess, target){
+    const dR = guess.r - target.r;
+    const dG = guess.g - target.g;
+    const dB = guess.b - target.b;
+
+    const vG = avgValue(guess), vT = avgValue(target);
+    const dV = vG - vT;
+
+    const sG = satProxy(guess), sT = satProxy(target);
+    const dS = sG - sT;
+
+    const absDV = Math.abs(dV);
+    const absDS = Math.abs(dS);
+
+    if (absDV >= 18){
+      const dir = dV > 0 ? "too light" : "too dark";
+      return {
+        title: "Value correction",
+        text: `Your overall brightness is ${dir} (ΔV=${dV.toFixed(1)}). Adjust all channels together by roughly ${Math.round(absDV)} then fine-tune hue.`
+      };
+    }
+
+    if (absDS >= 25){
+      const dir = dS > 0 ? "too vivid" : "too muted";
+      return {
+        title: "Saturation correction",
+        text:
+          `Your colour is ${dir} (ΔS=${dS.toFixed(0)} using S≈max−min). ` +
+          (dS > 0
+            ? "Bring channels closer together (pull the highest down and/or push the lowest up)."
+            : "Spread channels apart a bit (raise the dominant and/or lower the weakest).")
+      };
+    }
+
+    if (dR > 10 && dB < -10) return { title: "Hue drift (warm)", text: "You leaned too warm: R is high and B is low. Reduce R and/or raise B slightly while keeping value steady." };
+    if (dB > 10 && dR < -10) return { title: "Hue drift (cool)", text: "You leaned too cool: B is high and R is low. Reduce B and/or raise R slightly while keeping value steady." };
+
+    const biggest = [
+      {k:"R", v:Math.abs(dR), s:dR},
+      {k:"G", v:Math.abs(dG), s:dG},
+      {k:"B", v:Math.abs(dB), s:dB},
+    ].sort((a,b)=>b.v-a.v)[0];
+
+    return {
+      title: "Micro-tuning",
+      text: `You’re close. Biggest remaining channel error is ${biggest.k} (${biggest.s>0?"too high":"too low"} by ${biggest.v}). Nudge that channel while keeping value steady.`
+    };
+  }
+
+  function updateStats(lastScoreText){
+    statAttempts.textContent = String(allScoresRGB.length + allScoresValue.length);
+
+    if (allScoresRGB.length){
+      statBest.textContent = String(Math.min(...allScoresRGB));
+      const last20 = allScoresRGB.slice(-20);
+      statAvg20.textContent = (last20.reduce((a,b)=>a+b,0) / last20.length).toFixed(1);
+      const last50 = allScoresRGB.slice(-50);
+      const med50 = median(last50);
+      statMed50.textContent = (med50==null) ? "—" : med50.toFixed(1);
+    } else {
+      statBest.textContent = "—";
+      statAvg20.textContent = "—";
+      statMed50.textContent = "—";
+    }
+    statStreak.textContent = String(streak);
+    statLast.textContent = lastScoreText || "—";
+  }
+
+  function pushHistory(entry){
+    historyRGB.unshift(entry);
+    if (historyRGB.length > 10) historyRGB.pop();
+
+    histBody.innerHTML = historyRGB.map((h, idx) => {
+      const num = historyRGB.length - idx;
+
+      const tgtBar = h.mode === "value"
+        ? `<span class="pill">V=${h.targetV}</span><div class="miniBar" style="margin-top:6px;background:${grayCss(h.targetV)};"></div>`
+        : h.mode === "order"
+          ? `<span class="pill">${h.targetOrder}</span><div class="miniBar" style="margin-top:6px;background:${rgbCss(h.target)};"></div>`
+          : `<span class="pill">${rgbCss(h.target)}</span><div class="miniBar" style="margin-top:6px;background:${rgbCss(h.target)};"></div>`;
+
+      const guessBar = h.mode === "value"
+        ? `<span class="pill">V=${h.guessV}</span><div class="miniBar" style="margin-top:6px;background:${grayCss(h.guessV)};"></div>`
+        : h.mode === "order"
+          ? `<span class="pill">${h.guessOrder}</span><div class="miniBar" style="margin-top:6px;background:var(--soft);"></div>`
+          : `<span class="pill">${rgbCss(h.guess)}</span><div class="miniBar" style="margin-top:6px;background:${rgbCss(h.guess)};"></div>`;
+
+      const scoreText = h.mode === "rgb"
+        ? `Manhattan ${h.score} · Euclid ${h.euclid.toFixed(1)}`
+        : h.mode === "value"
+          ? `|ΔV| ${h.score}`
+          : (h.correct ? `✅ Correct` : `❌ Wrong`);
+
+      return `
+        <tr>
+          <td><span class="pill">${num}</span></td>
+          <td>${tgtBar}</td>
+          <td>${guessBar}</td>
+          <td><span class="pill">${scoreText}</span></td>
+        </tr>
+      `;
+    }).join("") || `<tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>`;
+  }
+
+  function submitRGB(){
+    const guess = currentGuessRGB();
+
+    yourOut.textContent = rgbCss(guess);
+    targetOut.textContent = rgbCss(target);
+
+    yourSwatch.style.background = rgbCss(guess);
+    targetMini.style.background = rgbCss(target);
+
+    const diff = absDiffColor(guess, target);
+    diffOut.textContent = rgbCss(diff);
+    diffSwatch.style.background = rgbCss(diff);
+
+    yourSwatch.style.filter = "none";
+    targetMini.style.filter = "none";
+    diffSwatch.style.filter = "none";
+
+    const m = manhattan(guess, target);
+    const e = euclid(guess, target);
+
+    const dR = guess.r - target.r;
+    const dG = guess.g - target.g;
+    const dB = guess.b - target.b;
+
+    const vG = avgValue(guess), vT = avgValue(target);
+    const sG = satProxy(guess), sT = satProxy(target);
+
+    errMain.textContent = `${m} (Manhattan)`;
+    errBreakdown.innerHTML =
+      `ΔR=${dR} · ΔG=${dG} · ΔB=${dB}<br>` +
+      `ΔV=${(vG - vT).toFixed(1)} (V≈avg) · ΔS=${(sG - sT).toFixed(0)} (S≈max−min)<br>` +
+      `<span class="muted">Target V=${vT.toFixed(1)}, S=${sT.toFixed(0)} · Guess V=${vG.toFixed(1)}, S=${sG.toFixed(0)}</span>`;
+
+    const coach = coachingForRGB(guess, target);
+    nudgeTitle.textContent = coach.title;
+    nudgeText.textContent = coach.text;
+
+    allScoresRGB.push(m);
+    streak = (m <= STREAK_THRESHOLD) ? (streak + 1) : 0;
+
+    updateStats(`RGB Manhattan ${m}`);
+    pushHistory({ mode:"rgb", target:{...target}, guess:{...guess}, score:m, euclid:e });
+
+    revealBtn.disabled = true;
+  }
+
+  function submitValue(){
+    const guessV = currentGuessV();
+    const targetV = Math.round(avgValue(target));
+    const score = Math.abs(guessV - targetV);
+
+    yourOut.textContent = `V=${guessV} (rgb(${guessV},${guessV},${guessV}))`;
+    targetOut.textContent = `V=${targetV} (rgb(${targetV},${targetV},${targetV}))`;
+
+    yourSwatch.style.background = grayCss(guessV);
+    targetMini.style.background = grayCss(targetV);
+
+    diffOut.textContent = `ΔV=${score}`;
+    diffSwatch.style.background = grayCss(score);
+
+    yourSwatch.style.filter = "none";
+    targetMini.style.filter = "none";
+    diffSwatch.style.filter = "none";
+
+    errMain.textContent = `|ΔV| = ${score}`;
+    errBreakdown.textContent =
+      (guessV > targetV)
+        ? `You were too light by ${guessV - targetV}.`
+        : (guessV < targetV)
+          ? `You were too dark by ${targetV - guessV}.`
+          : `Perfect value match.`;
+
+    nudgeTitle.textContent = (score === 0) ? "Perfect" : "Value correction";
+    nudgeText.textContent = (score === 0)
+      ? "Nice. Now switch to Full RGB and practice keeping this same value while changing hue."
+      : `Aim around ${targetV} next time (within ±10 is strong).`;
+
+    allScoresValue.push(score);
+    updateStats(`Value |ΔV| ${score}`);
+
+    pushHistory({ mode:"value", targetV, guessV, score });
+    revealBtn.disabled = true;
+  }
+
+  function submitOrder(){
+    const guessHigh = highestSel.value;
+    const guessLow = lowestSel.value;
+
+    if (guessHigh === guessLow){
+      errMain.textContent = "Invalid";
+      errBreakdown.textContent = "Highest and lowest cannot be the same channel.";
+      nudgeTitle.textContent = "Fix selection";
+      nudgeText.textContent = "Pick different channels for Highest and Lowest, then submit again.";
+      return;
+    }
+
+    const ord = channelOrder(target);
+    const correct = (guessHigh === ord.highest) && (guessLow === ord.lowest);
+
+    yourOut.textContent = `Highest=${guessHigh.toUpperCase()} · Lowest=${guessLow.toUpperCase()}`;
+    targetOut.textContent = `${rgbCss(target)} · Order: ${ord.sorted.replaceAll("≥"," ≥ ")}`;
+
+    yourSwatch.style.background = "var(--soft)";
+    targetMini.style.background = rgbCss(target);
+    diffOut.textContent = correct ? "✅ Correct" : "❌ Wrong";
+    diffSwatch.style.background = correct ? "rgb(4,120,87)" : "rgb(185,28,28)";
+
+    yourSwatch.style.filter = "none";
+    targetMini.style.filter = "none";
+    diffSwatch.style.filter = "none";
+
+    errMain.textContent = correct ? "Correct" : "Incorrect";
+    errBreakdown.textContent = correct
+      ? `Nice. Actual highest=${ord.highest.toUpperCase()}, lowest=${ord.lowest.toUpperCase()}.`
+      : `Actual highest=${ord.highest.toUpperCase()}, lowest=${ord.lowest.toUpperCase()}. You chose ${guessHigh.toUpperCase()} / ${guessLow.toUpperCase()}.`;
+
+    nudgeTitle.textContent = "What to notice next time";
+    nudgeText.textContent = "Decide dominance first (which channel leads), then estimate brightness, then saturation.";
+
+    updateStats(correct ? "Order ✅" : "Order ❌");
+    pushHistory({ mode:"order", target:{...target}, guessOrder:`${guessHigh.toUpperCase()}/${guessLow.toUpperCase()}`, targetOrder:`${ord.highest.toUpperCase()}/${ord.lowest.toUpperCase()}`, correct });
+    revealBtn.disabled = true;
+  }
+
+  function submitRGBTrainer(){
+    showTarget();
+    clearExposure();
+    const m = modeSel.value;
+    if (m==="rgb") submitRGB();
+    else if (m==="value") submitValue();
+    else submitOrder();
+  }
+
+  function adjustActive(delta, shiftKey){
+    const m = modeSel.value;
+    const step = (shiftKey ? 10 : +stepSel.value);
+    const d = delta * step;
+
+    if (m==="value"){
+      vSl.value = String(clamp(+vSl.value + d, 0, 255));
+    } else if (m==="rgb"){
+      if (activeControl==="r") rSl.value = String(clamp(+rSl.value + d, 0, 255));
+      if (activeControl==="g") gSl.value = String(clamp(+gSl.value + d, 0, 255));
+      if (activeControl==="b") bSl.value = String(clamp(+bSl.value + d, 0, 255));
+    }
+    updateSliderNumbers();
+  }
+
+  window.addEventListener("keydown", (e) => {
+    // only while RGB panel active
+    if (!el("panel_rgb").classList.contains("active")) return;
+
+    const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+    if (tag === "select" || tag === "input") {
+      // allow range keys? but keep it simple: don't hijack when focused
+      return;
+    }
+
+    if (e.key === "ArrowLeft"){ e.preventDefault(); adjustActive(-1, e.shiftKey); }
+    else if (e.key === "ArrowRight"){ e.preventDefault(); adjustActive(+1, e.shiftKey); }
+  });
+
+  [rSl,gSl,bSl,vSl].forEach(sl => sl.addEventListener("input", updateSliderNumbers));
+  rLabel.addEventListener("click", () => setActiveControl("r"));
+  gLabel.addEventListener("click", () => setActiveControl("g"));
+  bLabel.addEventListener("click", () => setActiveControl("b"));
+  vLabel.addEventListener("click", () => setActiveControl("v"));
+
+  newBtn.addEventListener("click", newRound);
+  submitBtn.addEventListener("click", submitRGBTrainer);
+  revealBtn.addEventListener("click", revealTargetRGB);
+
+  modeSel.addEventListener("change", () => { resetResultPanels(); setModeUI(); startExposure(); });
+  paletteSel.addEventListener("change", () => newRound());
+  exposureSel.addEventListener("change", () => startExposure());
+  lockTarget.addEventListener("change", () => startExposure());
+  hintToggle.addEventListener("change", updateHint);
+  stepSel.addEventListener("change", () => setSliderSteps(stepSel.value));
+
+  setSliderSteps(stepSel.value);
+  updateSliderNumbers();
+  setModeUI();
+  resetResultPanels();
+  setActiveControl("r");
+  newRound();
+
+  // =========================================================
+  // LINE THICKNESS
+  // =========================================================
+  const lt_canvas = el("lt_canvas");
+  let lt_ctx = null;
+  let lt_actual = 10;
+  const lt_hist = [];
+  const lt_step = el("lt_step");
+  const lt_guess = el("lt_guess");
+  const lt_guess_val = el("lt_guess_val");
+  const lt_actual_out = el("lt_actual");
+  const lt_err_out = el("lt_err");
+  const lt_avg10_out = el("lt_avg10");
+  const lt_hist_body = el("lt_hist");
+
+  function lt_resetOutputs(){
+    lt_actual_out.textContent = "—";
+    lt_err_out.textContent = "—";
+    lt_avg10_out.textContent = "—";
+  }
+
+  function lt_draw(){
+    if (!lt_ctx) lt_ctx = fitCanvas(lt_canvas);
+    const ctx = lt_ctx;
+    const w = lt_canvas.getBoundingClientRect().width;
+    const h = lt_canvas.getBoundingClientRect().height;
+
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,w,h);
+
+    ctx.strokeStyle = "rgba(17,24,39,0.06)";
+    ctx.lineWidth = 1;
+    for (let y=20; y<h; y+=20){
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+    }
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineCap = "round";
+    ctx.lineWidth = lt_actual;
+
+    const margin = 50;
+    ctx.beginPath();
+    ctx.moveTo(margin, h/2);
+    ctx.lineTo(w-margin, h/2);
+    ctx.stroke();
+  }
+
+  function lt_new(){
+    lt_resetOutputs();
+    // bias toward thin/medium
+    const r = Math.random();
+    if (r < 0.55) lt_actual = randFloat(1, 8);
+    else if (r < 0.9) lt_actual = randFloat(8, 18);
+    else lt_actual = randFloat(18, 35);
+    lt_actual = Math.round(lt_actual * 4) / 4; // quarter px
+    lt_draw();
+  }
+
+  function lt_renderHist(){
+    if (!lt_hist.length){
+      lt_hist_body.innerHTML = `<tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>`;
+      return;
+    }
+    lt_hist_body.innerHTML = lt_hist.map((x, i) => `
+      <tr>
+        <td><span class="pill">${lt_hist.length - i}</span></td>
+        <td>${x.a.toFixed(2)}px</td>
+        <td>${x.g.toFixed(2)}px</td>
+        <td>${x.e.toFixed(2)}px</td>
+      </tr>
+    `).join("");
+  }
+
+  function lt_submit(){
+    const g = parseFloat(lt_guess.value);
+    const e = Math.abs(g - lt_actual);
+    lt_actual_out.textContent = `${lt_actual.toFixed(2)}px`;
+    lt_err_out.textContent = `${e.toFixed(2)}px`;
+
+    lt_hist.unshift({a:lt_actual, g, e});
+    if (lt_hist.length > 10) lt_hist.pop();
+    const avg10 = lt_hist.reduce((s,x)=>s+x.e,0)/lt_hist.length;
+    lt_avg10_out.textContent = `${avg10.toFixed(2)}px`;
+    lt_renderHist();
+  }
+
+  function lt_updateGuessLabel(){
+    lt_guess_val.textContent = (+lt_guess.value).toFixed(2);
+  }
+  lt_step.addEventListener("change", () => {
+    lt_guess.step = lt_step.value;
+    // snap
+    const step = +lt_step.value;
+    const v = +lt_guess.value;
+    lt_guess.value = String(clamp(Math.round(v/step)*step, +lt_guess.min, +lt_guess.max));
+    lt_updateGuessLabel();
+  });
+  lt_guess.addEventListener("input", lt_updateGuessLabel);
+  el("lt_new").addEventListener("click", lt_new);
+  el("lt_submit").addEventListener("click", lt_submit);
+  lt_updateGuessLabel();
+  lt_new();
+
+  // =========================================================
+  // ASPECT RATIO
+  // =========================================================
+  const ar_canvas = el("ar_canvas");
+  let ar_ctx = null;
+  const ar_pool = el("ar_pool");
+  const ar_choices = el("ar_choices");
+  const ar_actual_out = el("ar_actual");
+  const ar_your_out = el("ar_your");
+  const ar_result_out = el("ar_result");
+  const ar_status = el("ar_status");
+  const ar_hist_body = el("ar_hist");
+  const ar_hist = [];
+
+  let ar_actual = {w:16, h:9, label:"16:9"};
+  let ar_selected = null;
+
+  const AR_POOLS = {
+    common: [
+      {w:1,h:1,label:"1:1"},
+      {w:4,h:3,label:"4:3"},
+      {w:3,h:2,label:"3:2"},
+      {w:16,h:9,label:"16:9"},
+      {w:21,h:9,label:"21:9"},
+    ],
+    extended: [
+      {w:1,h:1,label:"1:1"},
+      {w:5,h:4,label:"5:4"},
+      {w:4,h:3,label:"4:3"},
+      {w:3,h:2,label:"3:2"},
+      {w:2,h:1,label:"2:1"},
+      {w:16,h:9,label:"16:9"},
+      {w:21,h:9,label:"21:9"},
+      {w:9,h:16,label:"9:16"},
+    ]
+  };
+
+  function ar_ratioValue(r){ return r.w / r.h; }
+  function ar_format(r){ return `${r.w}:${r.h}`; }
+
+  function ar_draw(){
+    if (!ar_ctx) ar_ctx = fitCanvas(ar_canvas);
+    const ctx = ar_ctx;
+    const cw = ar_canvas.getBoundingClientRect().width;
+    const ch = ar_canvas.getBoundingClientRect().height;
+    ctx.clearRect(0,0,cw,ch);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,cw,ch);
+
+    // draw a centered rectangle with the aspect ratio, random size but fitting canvas
+    const pad = 30;
+    const maxW = cw - pad*2;
+    const maxH = ch - pad*2;
+
+    const r = ar_ratioValue(ar_actual);
+    let w = maxW, h = w / r;
+    if (h > maxH){ h = maxH; w = h * r; }
+
+    const x = (cw - w)/2;
+    const y = (ch - h)/2;
+
+    // subtle guide
+    ctx.strokeStyle="rgba(17,24,39,0.08)";
+    ctx.lineWidth=1;
+    ctx.strokeRect(x,y,w,h);
+
+    // internal tick marks to reduce “pure guess” without giving away
+    ctx.strokeStyle="rgba(17,24,39,0.08)";
+    for (let i=1;i<4;i++){
+      ctx.beginPath();
+      ctx.moveTo(x + (w*i/4), y);
+      ctx.lineTo(x + (w*i/4), y + h);
+      ctx.stroke();
+    }
+    for (let i=1;i<3;i++){
+      ctx.beginPath();
+      ctx.moveTo(x, y + (h*i/3));
+      ctx.lineTo(x + w, y + (h*i/3));
+      ctx.stroke();
+    }
+  }
+
+  function ar_buildChoices(){
+    const pool = AR_POOLS[ar_pool.value];
+    ar_choices.innerHTML = "";
+    ar_selected = null;
+
+    pool.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.type="button";
+      btn.className="secondary";
+      btn.textContent = opt.label;
+      btn.style.padding = "9px 10px";
+      btn.addEventListener("click", () => {
+        ar_selected = opt;
+        [...ar_choices.querySelectorAll("button")].forEach(b => b.style.outline = "none");
+        btn.style.outline = "2px solid #111827";
+        ar_status.textContent = `Selected: ${opt.label}`;
+      });
+      ar_choices.appendChild(btn);
+    });
+    ar_status.textContent = "—";
+  }
+
+  function ar_new(){
+    ar_actual_out.textContent = "—";
+    ar_your_out.textContent = "—";
+    ar_result_out.textContent = "—";
+    ar_buildChoices();
+    const pool = AR_POOLS[ar_pool.value];
+    ar_actual = pool[randInt(0,pool.length-1)];
+    ar_draw();
+  }
+
+  function ar_renderHist(){
+    if (!ar_hist.length){
+      ar_hist_body.innerHTML = `<tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>`;
+      return;
+    }
+    ar_hist_body.innerHTML = ar_hist.map((x,i)=>`
+      <tr>
+        <td><span class="pill">${ar_hist.length - i}</span></td>
+        <td>${x.a}</td>
+        <td>${x.y}</td>
+        <td>${x.ok ? "✅" : "❌"}</td>
+      </tr>
+    `).join("");
+  }
+
+  function ar_submit(){
+    if (!ar_selected){
+      ar_status.textContent = "Select a ratio first.";
+      return;
+    }
+    const ok = (ar_selected.label === ar_actual.label);
+    ar_actual_out.textContent = ar_actual.label;
+    ar_your_out.textContent = ar_selected.label;
+    ar_result_out.textContent = ok ? "Correct" : "Wrong";
+
+    ar_hist.unshift({a:ar_actual.label, y:ar_selected.label, ok});
+    if (ar_hist.length > 10) ar_hist.pop();
+    ar_renderHist();
+  }
+
+  ar_pool.addEventListener("change", ar_new);
+  el("ar_new").addEventListener("click", ar_new);
+  el("ar_submit").addEventListener("click", ar_submit);
+  ar_new();
+
+  // =========================================================
+  // ANGLE ESTIMATION
+  // =========================================================
+  const ang_canvas = el("ang_canvas");
+  let ang_ctx = null;
+  const ang_step = el("ang_step");
+  const ang_guess = el("ang_guess");
+  const ang_guess_val = el("ang_guess_val");
+  const ang_actual_out = el("ang_actual");
+  const ang_err_out = el("ang_err");
+  const ang_avg10_out = el("ang_avg10");
+  const ang_hist_body = el("ang_hist");
+  const ang_hist = [];
+  let ang_actual = 90;
+
+  function ang_draw(reveal=false){
+    if (!ang_ctx) ang_ctx = fitCanvas(ang_canvas);
+    const ctx = ang_ctx;
+    const w = ang_canvas.getBoundingClientRect().width;
+    const h = ang_canvas.getBoundingClientRect().height;
+
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,w,h);
+
+    // crosshair
+    ctx.strokeStyle="rgba(17,24,39,0.08)";
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(w/2, 20); ctx.lineTo(w/2, h-20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, h/2); ctx.lineTo(w-20, h/2); ctx.stroke();
+
+    const rad = ang_actual * Math.PI/180;
+    const len = Math.min(w,h)*0.38;
+
+    // line
+    ctx.strokeStyle="#111827";
+    ctx.lineWidth=3;
+    ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(w/2 - Math.cos(rad)*len, h/2 - Math.sin(rad)*len);
+    ctx.lineTo(w/2 + Math.cos(rad)*len, h/2 + Math.sin(rad)*len);
+    ctx.stroke();
+
+    if (reveal){
+      ctx.fillStyle="rgba(255,255,255,0.85)";
+      ctx.strokeStyle="rgba(0,0,0,0.08)";
+      ctx.lineWidth=1;
+      const text = `Actual: ${ang_actual}°`;
+      ctx.font="12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      const tw = ctx.measureText(text).width;
+      const pad=8, bx=12, by=12, bw=tw+pad*2, bh=24;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(bx,by,bw,bh,999) : ctx.rect(bx,by,bw,bh);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle="#111827";
+      ctx.fillText(text, bx+pad, by+16);
+    }
+  }
+
+  function ang_new(){
+    ang_actual_out.textContent="—";
+    ang_err_out.textContent="—";
+    ang_avg10_out.textContent="—";
+    ang_actual = randInt(0,179);
+    ang_draw(false);
+  }
+  function ang_renderHist(){
+    if (!ang_hist.length){
+      ang_hist_body.innerHTML = `<tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>`;
+      return;
+    }
+    ang_hist_body.innerHTML = ang_hist.map((x,i)=>`
+      <tr>
+        <td><span class="pill">${ang_hist.length - i}</span></td>
+        <td>${x.a}°</td>
+        <td>${x.g}°</td>
+        <td>${x.e}°</td>
+      </tr>
+    `).join("");
+  }
+  function ang_submit(){
+    const g = +ang_guess.value;
+    const e = Math.abs(g - ang_actual);
+    ang_actual_out.textContent = `${ang_actual}°`;
+    ang_err_out.textContent = `${e.toFixed(0)}°`;
+    ang_hist.unshift({a:ang_actual, g, e:Math.round(e)});
+    if (ang_hist.length > 10) ang_hist.pop();
+    const avg10 = ang_hist.reduce((s,x)=>s+x.e,0)/ang_hist.length;
+    ang_avg10_out.textContent = `${avg10.toFixed(1)}°`;
+    ang_renderHist();
+    ang_draw(true);
+  }
+  ang_step.addEventListener("change", () => {
+    ang_guess.step = ang_step.value;
+    ang_guess.value = String(clamp(Math.round(+ang_guess.value / +ang_guess.step)*+ang_guess.step, 0, 179));
+    ang_guess_val.textContent = ang_guess.value;
+  });
+  ang_guess.addEventListener("input", ()=> ang_guess_val.textContent = ang_guess.value);
+  el("ang_new").addEventListener("click", ang_new);
+  el("ang_submit").addEventListener("click", ang_submit);
+  ang_guess_val.textContent = ang_guess.value;
+  ang_new();
+
+  // =========================================================
+  // MENTAL ROTATION
+  // =========================================================
+  const rot_canvas = el("rot_canvas");
+  let rot_ctx = null;
+  const rot_flash = el("rot_flash");
+  const rot_result = el("rot_result");
+  const rot_rt = el("rot_rt");
+  const rot_acc = el("rot_acc");
+  const rot_hist_body = el("rot_hist");
+
+  // Polyomino-like shapes as 0/1 matrices
+  const ROT_SHAPES = [
+    // L
+    [[1,0],[1,0],[1,1]],
+    // T
+    [[1,1,1],[0,1,0]],
+    // Z
+    [[1,1,0],[0,1,1]],
+    // P
+    [[1,1],[1,1],[1,0]],
+    // U
+    [[1,0,1],[1,1,1]],
+  ];
+
+  let rot_left = null;
+  let rot_right = null;
+  let rot_truthSame = true;
+  let rot_startedAt = 0;
+  const rot_hist = []; // last 20 boolean correct
+  const rot_rows = []; // display last 10 attempts
+
+  function matRotate90(m){
+    const h=m.length, w=m[0].length;
+    const out = Array.from({length:w}, ()=>Array(h).fill(0));
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++) out[x][h-1-y]=m[y][x];
+    return out;
+  }
+  function matMirror(m){
+    return m.map(row => [...row].reverse());
+  }
+  function matJitter(m){
+    // optionally flip a single cell to make "different"
+    const h=m.length, w=m[0].length;
+    const out = m.map(r=>[...r]);
+    const y=randInt(0,h-1), x=randInt(0,w-1);
+    out[y][x] = out[y][x] ? 0 : 1;
+    return out;
+  }
+  function matEqual(a,b){
+    if (a.length!==b.length || a[0].length!==b[0].length) return false;
+    for (let y=0;y<a.length;y++) for (let x=0;x<a[0].length;x++) if (a[y][x]!==b[y][x]) return false;
+    return true;
+  }
+  function matNormalize(m){
+    // trim empty rows/cols around
+    let top=0, bottom=m.length-1, left=0, right=m[0].length-1;
+    const rowEmpty = (y)=> m[y].every(v=>v===0);
+    const colEmpty = (x)=> m.every(row=>row[x]===0);
+    while (top<=bottom && rowEmpty(top)) top++;
+    while (bottom>=top && rowEmpty(bottom)) bottom--;
+    while (left<=right && colEmpty(left)) left++;
+    while (right>=left && colEmpty(right)) right--;
+    const out=[];
+    for (let y=top;y<=bottom;y++){
+      out.push(m[y].slice(left,right+1));
+    }
+    return out.length?out:[[0]];
+  }
+
+  function rot_draw(hidden=false){
+    if (!rot_ctx) rot_ctx = fitCanvas(rot_canvas);
+    const ctx = rot_ctx;
+    const w = rot_canvas.getBoundingClientRect().width;
+    const h = rot_canvas.getBoundingClientRect().height;
+
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,w,h);
+
+    // separators
+    ctx.strokeStyle="rgba(17,24,39,0.08)";
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(w/2, 10); ctx.lineTo(w/2, h-10); ctx.stroke();
+
+    function drawShape(m, cx, cy){
+      m = matNormalize(m);
+      const cell = Math.min(24, (Math.min(w/2,h) * 0.6) / Math.max(m.length, m[0].length));
+      const mw = m[0].length * cell;
+      const mh = m.length * cell;
+      const ox = cx - mw/2;
+      const oy = cy - mh/2;
+
+      ctx.fillStyle = "#111827";
+      for (let y=0;y<m.length;y++){
+        for (let x=0;x<m[0].length;x++){
+          if (m[y][x]){
+            ctx.fillRect(ox + x*cell, oy + y*cell, cell, cell);
+          }
+        }
+      }
+      // outline
+      ctx.strokeStyle="rgba(17,24,39,0.12)";
+      ctx.strokeRect(ox-1, oy-1, mw+2, mh+2);
+    }
+
+    ctx.fillStyle="rgba(17,24,39,0.6)";
+    ctx.font="12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText("Left", 14, 20);
+    ctx.fillText("Right", w/2 + 14, 20);
+
+    if (hidden){
+      ctx.fillStyle="rgba(243,244,246,0.95)";
+      ctx.fillRect(0,0,w,h);
+      ctx.fillStyle="#111827";
+      ctx.font="900 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.textAlign="center";
+      ctx.fillText("HIDDEN", w/2, h/2);
+      ctx.textAlign="left";
+      return;
+    }
+
+    drawShape(rot_left, w*0.25, h*0.55);
+    drawShape(rot_right, w*0.75, h*0.55);
+  }
+
+  function rot_new(){
+    rot_result.textContent = "—";
+    rot_rt.textContent = "—";
+
+    const base = ROT_SHAPES[randInt(0, ROT_SHAPES.length-1)].map(r=>[...r]);
+
+    // left is base with random rotations
+    let left = base;
+    const leftTurns = randInt(0,3);
+    for (let i=0;i<leftTurns;i++) left = matRotate90(left);
+    rot_left = left;
+
+    // decide truth
+    rot_truthSame = Math.random() < 0.55;
+
+    if (rot_truthSame){
+      // right is same shape but rotated (not mirrored)
+      let right = base;
+      const turns = randInt(0,3);
+      for (let i=0;i<turns;i++) right = matRotate90(right);
+      rot_right = right;
+    } else {
+      // different: either mirrored, or jittered, plus rotation
+      let right = base;
+      if (Math.random()<0.6) right = matMirror(right);
+      else right = matJitter(right);
+      const turns = randInt(0,3);
+      for (let i=0;i<turns;i++) right = matRotate90(right);
+      rot_right = right;
+    }
+
+    rot_draw(false);
+    rot_startedAt = performance.now();
+
+    if (rot_flash.checked){
+      setTimeout(() => {
+        // only hide if still in this panel
+        if (el("panel_rot").classList.contains("active")) rot_draw(true);
+      }, 2000);
+    }
+  }
+
+  function rot_renderHist(){
+    if (!rot_rows.length){
+      rot_hist_body.innerHTML = `<tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>`;
+      return;
+    }
+    rot_hist_body.innerHTML = rot_rows.map((x,i)=>`
+      <tr>
+        <td><span class="pill">${rot_rows.length - i}</span></td>
+        <td>${x.truth ? "Same" : "Different"}</td>
+        <td>${x.you}</td>
+        <td>${Math.round(x.rt)}ms</td>
+      </tr>
+    `).join("");
+  }
+
+  function rot_answer(isSame){
+    const rt = performance.now() - rot_startedAt;
+    const ok = (isSame === rot_truthSame);
+
+    rot_result.textContent = ok ? "Correct" : "Wrong";
+    rot_rt.textContent = `${Math.round(rt)}`;
+
+    rot_hist.push(ok);
+    const last20 = rot_hist.slice(-20);
+    const acc = last20.reduce((s,x)=>s+(x?1:0),0) / last20.length;
+    rot_acc.textContent = `${Math.round(acc*100)}%`;
+
+    rot_rows.unshift({truth: rot_truthSame, you: isSame ? "Same" : "Different", rt});
+    if (rot_rows.length > 10) rot_rows.pop();
+    rot_renderHist();
+
+    // after answering, show shapes (in case flash hid them)
+    rot_draw(false);
+  }
+
+  el("rot_new").addEventListener("click", rot_new);
+  el("rot_same").addEventListener("click", ()=>rot_answer(true));
+  el("rot_diff").addEventListener("click", ()=>rot_answer(false));
+  rot_new();
+
+  // =========================================================
+  // BPM ESTIMATION (Web Audio click track)
+  // =========================================================
+  const bpm_new = el("bpm_new");
+  const bpm_play = el("bpm_play");
+  const bpm_submit = el("bpm_submit");
+  const bpm_dur = el("bpm_dur");
+  const bpm_guess = el("bpm_guess");
+  const bpm_guess_val = el("bpm_guess_val");
+  const bpm_status = el("bpm_status");
+  const bpm_actual_out = el("bpm_actual");
+  const bpm_err_out = el("bpm_err");
+  const bpm_avg10_out = el("bpm_avg10");
+  const bpm_hist_body = el("bpm_hist");
+  const bpm_hist = [];
+  let bpm_actual = 120;
+  let audioCtx = null;
+  let bpm_isPlaying = false;
+
+  function bpm_renderHist(){
+    if (!bpm_hist.length){
+      bpm_hist_body.innerHTML = `<tr><td colspan="4" style="color:var(--muted); padding:14px;">No attempts yet.</td></tr>`;
+      return;
+    }
+    bpm_hist_body.innerHTML = bpm_hist.map((x,i)=>`
+      <tr>
+        <td><span class="pill">${bpm_hist.length - i}</span></td>
+        <td>${x.a}</td>
+        <td>${x.g}</td>
+        <td>${x.e}</td>
+      </tr>
+    `).join("");
+  }
+
+  function bpm_newRound(){
+    bpm_actual_out.textContent="—";
+    bpm_err_out.textContent="—";
+    bpm_avg10_out.textContent="—";
+    bpm_status.textContent="Press Play. (If your browser blocks audio, click anywhere once.)";
+    // range typical music
+    bpm_actual = randInt(60, 180);
+  }
+
+  function bpm_click(atTime){
+    // short click using oscillator + gain envelope
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.value = 1200;
+    gain.gain.setValueAtTime(0.0001, atTime);
+    gain.gain.exponentialRampToValueAtTime(0.25, atTime + 0.001);
+    gain.gain.exponentialRampToValueAtTime(0.0001, atTime + 0.03);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(atTime);
+    osc.stop(atTime + 0.04);
+  }
+
+  async function bpm_playTrack(){
+    if (bpm_isPlaying) return;
+    bpm_isPlaying = true;
+
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+
+    const dur = +bpm_dur.value;
+    const interval = 60 / bpm_actual;
+    const start = audioCtx.currentTime + 0.05;
+
+    const beats = Math.floor(dur / interval);
+    for (let i=0;i<=beats;i++){
+      bpm_click(start + i*interval);
+    }
+
+    bpm_status.textContent = `Playing… (${bpm_actual} hidden)`;
+    setTimeout(() => {
+      bpm_isPlaying = false;
+      bpm_status.textContent = "Playback finished. Estimate BPM and Submit.";
+    }, dur * 1000 + 120);
+  }
+
+  function bpm_submitGuess(){
+    const g = +bpm_guess.value;
+    const e = Math.abs(g - bpm_actual);
+    bpm_actual_out.textContent = `${bpm_actual}`;
+    bpm_err_out.textContent = `${e}`;
+    bpm_hist.unshift({a:bpm_actual, g, e});
+    if (bpm_hist.length > 10) bpm_hist.pop();
+    const avg10 = bpm_hist.reduce((s,x)=>s+x.e,0)/bpm_hist.length;
+    bpm_avg10_out.textContent = avg10.toFixed(1);
+    bpm_renderHist();
+  }
+
+  bpm_guess.addEventListener("input", ()=> bpm_guess_val.textContent = bpm_guess.value);
+  bpm_guess_val.textContent = bpm_guess.value;
+  bpm_new.addEventListener("click", bpm_newRound);
+  bpm_play.addEventListener("click", bpm_playTrack);
+  bpm_submit.addEventListener("click", bpm_submitGuess);
+  bpm_newRound();
+
+  // =========================================================
+  // CURSOR PRECISION (FITTS)
+  // =========================================================
+  const aim_canvas = el("aim_canvas");
+  let aim_ctx = null;
+  const aim_start = el("aim_start");
+  const aim_stop = el("aim_stop");
+  const aim_size = el("aim_size");
+  const aim_done = el("aim_done");
+  const aim_time = el("aim_time");
+  const aim_miss = el("aim_miss");
+
+  let aim_running = false;
+  let aim_targets = [];
+  let aim_index = 0;
+  let aim_startTime = 0;
+  let aim_misses = 0;
+  let aim_radius = +aim_size.value/2;
+
+  function aim_spawnTargets(n=20){
+    const w = aim_canvas.getBoundingClientRect().width;
+    const h = aim_canvas.getBoundingClientRect().height;
+    const pad = 24;
+    const out=[];
+    for (let i=0;i<n;i++){
+      out.push({
+        x: randFloat(pad, w-pad),
+        y: randFloat(pad, h-pad),
+      });
+    }
+    return out;
+  }
+
+  function aim_draw(){
+    if (!aim_ctx) aim_ctx = fitCanvas(aim_canvas);
+    const ctx = aim_ctx;
+    const w = aim_canvas.getBoundingClientRect().width;
+    const h = aim_canvas.getBoundingClientRect().height;
+
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,w,h);
+
+    // draw all targets faint
+    ctx.strokeStyle="rgba(17,24,39,0.15)";
+    ctx.lineWidth=2;
+    aim_targets.forEach((t,i)=>{
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, aim_radius, 0, Math.PI*2);
+      ctx.stroke();
+    });
+
+    // active
+    if (aim_targets[aim_index]){
+      const t = aim_targets[aim_index];
+      ctx.fillStyle="#111827";
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, aim_radius, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle="rgba(255,255,255,0.9)";
+      ctx.font="700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.textAlign="center";
+      ctx.textBaseline="middle";
+      ctx.fillText(String(aim_index+1), t.x, t.y);
+      ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+    }
+
+    // header
+    ctx.fillStyle="rgba(17,24,39,0.6)";
+    ctx.font="12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(aim_running ? "Click the filled target" : "Press Start", 12, 20);
+  }
+
+  function aim_resetUI(){
+    aim_done.textContent = "0/0";
+    aim_time.textContent = "—";
+    aim_miss.textContent = "—";
+  }
+
+  function aim_startRun(){
+    aim_radius = +aim_size.value/2;
+    aim_targets = aim_spawnTargets(20);
+    aim_index = 0;
+    aim_misses = 0;
+    aim_running = true;
+    aim_startTime = performance.now();
+    aim_resetUI();
+    aim_done.textContent = `1/${aim_targets.length}`;
+    aim_miss.textContent = "0";
+    aim_draw();
+  }
+
+  function aim_stopRun(){
+    aim_running = false;
+    aim_draw();
+  }
+
+  function aim_finish(){
+    aim_running = false;
+    const t = performance.now() - aim_startTime;
+    aim_time.textContent = `${(t/1000).toFixed(2)}s`;
+    aim_miss.textContent = String(aim_misses);
+    aim_done.textContent = `${aim_targets.length}/${aim_targets.length}`;
+    aim_draw();
+  }
+
+  aim_canvas.addEventListener("click", (e)=>{
+    if (!aim_running) return;
+    const rect = aim_canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const t = aim_targets[aim_index];
+    const d = Math.hypot(x-t.x, y-t.y);
+    if (d <= aim_radius){
+      aim_index++;
+      if (aim_index >= aim_targets.length) aim_finish();
+      else {
+        aim_done.textContent = `${aim_index+1}/${aim_targets.length}`;
+        aim_draw();
+      }
+    } else {
+      aim_misses++;
+      aim_miss.textContent = String(aim_misses);
+    }
+  });
+
+  aim_start.addEventListener("click", aim_startRun);
+  aim_stop.addEventListener("click", aim_stopRun);
+  aim_size.addEventListener("change", ()=>{ aim_radius = +aim_size.value/2; if (!aim_running) aim_draw(); });
+  aim_resetUI();
+  aim_draw();
+
+  // =========================================================
+  // TRACKING MOVING DOT
+  // =========================================================
+  const track_canvas = el("track_canvas");
+  let track_ctx = null;
+  const track_start = el("track_start");
+  const track_stop = el("track_stop");
+  const track_speed = el("track_speed");
+  const track_score = el("track_score");
+  const track_best = el("track_best");
+  const track_left = el("track_left");
+
+  let track_running = false;
+  let track_startAt = 0;
+  let track_duration = 8000;
+  let track_dot = {x:150,y:150, vx:1.1, vy:0.8};
+  let track_mouse = {x:0,y:0};
+  let track_sumDist = 0;
+  let track_samples = 0;
+  let track_bestScore = null;
+  let track_raf = null;
+
+  track_canvas.addEventListener("mousemove", (e)=>{
+    const r = track_canvas.getBoundingClientRect();
+    track_mouse.x = e.clientX - r.left;
+    track_mouse.y = e.clientY - r.top;
+  });
+
+  function track_reset(){
+    track_score.textContent = "—";
+    track_left.textContent = "—";
+    track_sumDist = 0;
+    track_samples = 0;
+  }
+
+  function track_draw(){
+    if (!track_ctx) track_ctx = fitCanvas(track_canvas);
+    const ctx = track_ctx;
+    const w = track_canvas.getBoundingClientRect().width;
+    const h = track_canvas.getBoundingClientRect().height;
+
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,w,h);
+
+    // dot
+    ctx.fillStyle="#111827";
+    ctx.beginPath();
+    ctx.arc(track_dot.x, track_dot.y, 9, 0, Math.PI*2);
+    ctx.fill();
+
+    // cursor ring for feedback
+    if (track_running){
+      ctx.strokeStyle="rgba(17,24,39,0.25)";
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.arc(track_mouse.x, track_mouse.y, 14, 0, Math.PI*2);
+      ctx.stroke();
+    }
+
+    // status text
+    ctx.fillStyle="rgba(17,24,39,0.6)";
+    ctx.font="12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(track_running ? "Track the dot" : "Press Start", 12, 20);
+  }
+
+  function track_step(ts){
+    if (!track_running) return;
+    const w = track_canvas.getBoundingClientRect().width;
+    const h = track_canvas.getBoundingClientRect().height;
+    const sp = +track_speed.value;
+
+    // move dot (bouncy)
+    track_dot.x += track_dot.vx * sp;
+    track_dot.y += track_dot.vy * sp;
+    if (track_dot.x < 12 || track_dot.x > w-12) track_dot.vx *= -1;
+    if (track_dot.y < 30 || track_dot.y > h-12) track_dot.vy *= -1;
+
+    // sample distance
+    const d = Math.hypot(track_mouse.x - track_dot.x, track_mouse.y - track_dot.y);
+    track_sumDist += d;
+    track_samples += 1;
+
+    const elapsed = ts - track_startAt;
+    const left = Math.max(0, track_duration - elapsed);
+    track_left.textContent = `${(left/1000).toFixed(1)}s`;
+
+    track_draw();
+
+    if (left <= 0){
+      track_running = false;
+      const avg = track_sumDist / Math.max(1, track_samples);
+      track_score.textContent = `${avg.toFixed(1)}px`;
+      if (track_bestScore == null || avg < track_bestScore) track_bestScore = avg;
+      track_best.textContent = (track_bestScore==null) ? "—" : `${track_bestScore.toFixed(1)}px`;
+      track_left.textContent = "0.0s";
+      track_draw();
+      return;
+    }
+
+    track_raf = requestAnimationFrame(track_step);
+  }
+
+  function track_startRun(){
+    if (track_raf) cancelAnimationFrame(track_raf);
+    track_reset();
+    const w = track_canvas.getBoundingClientRect().width;
+    const h = track_canvas.getBoundingClientRect().height;
+    track_dot = { x: randFloat(40, w-40), y: randFloat(60, h-40), vx: randFloat(-1.6,1.6), vy: randFloat(-1.4,1.4) };
+    track_running = true;
+    track_startAt = performance.now();
+    track_raf = requestAnimationFrame(track_step);
+  }
+
+  function track_stopRun(){
+    track_running = false;
+    if (track_raf) cancelAnimationFrame(track_raf);
+    track_left.textContent = "—";
+    track_draw();
+  }
+
+  track_start.addEventListener("click", track_startRun);
+  track_stop.addEventListener("click", track_stopRun);
+  track_reset();
+  track_draw();
+
+  // =========================================================
+  // RAPID TARGET SWITCHING
+  // =========================================================
+  const rts_canvas = el("rts_canvas");
+  let rts_ctx = null;
+  const rts_start = el("rts_start");
+  const rts_stop = el("rts_stop");
+  const rts_spread = el("rts_spread");
+  const rts_prog = el("rts_prog");
+  const rts_time = el("rts_time");
+  const rts_err_out = el("rts_err");
+
+  let rts_running=false;
+  let rts_targets=[];
+  let rts_index=0;
+  let rts_errors=0;
+  let rts_startedAt=0;
+
+  function rts_spawn(n=12){
+    const w = rts_canvas.getBoundingClientRect().width;
+    const h = rts_canvas.getBoundingClientRect().height;
+    const pad = 40;
+    const spread = +rts_spread.value;
+    // center-biased spawn depending on spread
+    const cx = w/2, cy = h/2;
+    const out=[];
+    for (let i=0;i<n;i++){
+      const rx = (Math.random()*2-1) * (w/2 - pad) * spread;
+      const ry = (Math.random()*2-1) * (h/2 - pad) * spread;
+      out.push({x: clamp(cx+rx, pad, w-pad), y: clamp(cy+ry, 50, h-pad)});
+    }
+    return out;
+  }
+
+  function rts_draw(){
+    if (!rts_ctx) rts_ctx = fitCanvas(rts_canvas);
+    const ctx = rts_ctx;
+    const w = rts_canvas.getBoundingClientRect().width;
+    const h = rts_canvas.getBoundingClientRect().height;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,w,h);
+
+    ctx.fillStyle="rgba(17,24,39,0.6)";
+    ctx.font="12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(rts_running ? "Click 1→2→3…" : "Press Start", 12, 20);
+
+    const R = 20;
+
+    // draw all targets
+    rts_targets.forEach((t,i)=>{
+      const active = (i===rts_index);
+      ctx.fillStyle = active ? "#111827" : "rgba(17,24,39,0.12)";
+      ctx.beginPath();
+      ctx.arc(t.x,t.y,R,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = active ? "rgba(255,255,255,0.92)" : "rgba(17,24,39,0.45)";
+      ctx.font = "800 12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(String(i+1), t.x, t.y);
+      ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+    });
+  }
+
+  function rts_startRun(){
+    rts_targets = rts_spawn(12);
+    rts_index = 0;
+    rts_errors = 0;
+    rts_running = true;
+    rts_startedAt = performance.now();
+    rts_prog.textContent = `1/${rts_targets.length}`;
+    rts_time.textContent = "—";
+    rts_err_out.textContent = "0";
+    rts_draw();
+  }
+
+  function rts_finish(){
+    rts_running = false;
+    const t = performance.now() - rts_startedAt;
+    rts_time.textContent = `${(t/1000).toFixed(2)}s`;
+    rts_prog.textContent = `${rts_targets.length}/${rts_targets.length}`;
+    rts_draw();
+  }
+
+  function rts_stopRun(){
+    rts_running = false;
+    rts_draw();
+  }
+
+  rts_canvas.addEventListener("click", (e)=>{
+    if (!rts_running) return;
+    const rect = rts_canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const R = 20;
+
+    // check if clicked current target
+    const t = rts_targets[rts_index];
+    if (Math.hypot(x-t.x, y-t.y) <= R){
+      rts_index++;
+      if (rts_index >= rts_targets.length) rts_finish();
+      else {
+        rts_prog.textContent = `${rts_index+1}/${rts_targets.length}`;
+        rts_draw();
+      }
+    } else {
+      rts_errors++;
+      rts_err_out.textContent = String(rts_errors);
+    }
+  });
+
+  rts_start.addEventListener("click", rts_startRun);
+  rts_stop.addEventListener("click", rts_stopRun);
+  rts_spread.addEventListener("change", ()=>{ if (!rts_running) rts_draw(); });
+  rts_draw();
+
+  // =========================================================
+  // Global resize handling for canvases
+  // =========================================================
+  window.addEventListener("resize", () => {
+    // reset ctx so next draw refits
+    lt_ctx = null; ar_ctx = null; ang_ctx = null; rot_ctx = null; aim_ctx = null; track_ctx = null; rts_ctx = null;
+    // redraw active
+    const active = gameSelect.value;
+    setActiveGame(active);
+  });
+
+  // initial active
+  setActiveGame(gameSelect.value);
+
+  // expose draws for selector
+  window.lt_draw = lt_draw;
+  window.ar_draw = ar_draw;
+  window.ang_draw = () => ang_draw(false);
+  window.rot_draw = () => rot_draw(false);
+  window.aim_draw = aim_draw;
+  window.track_draw = track_draw;
+  window.rts_draw = rts_draw;
+})();
+</script>
+</body>
+</html>
